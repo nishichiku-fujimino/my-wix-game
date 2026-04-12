@@ -221,21 +221,20 @@ const db = getFirestore(app);
       // ============================
       // ゲーム終了
       // ============================
-      function endGame() {
+      async function endGame() {
         gameOver = true;
-
-        // Wix へスコア送信
-        window.parent.postMessage({
-          type: "GAME_OVER",
-          score: Math.floor(score)
-        }, "*");
-
-        // GAME OVER 表示
-        ctx.fillStyle = "black";
-        ctx.font = "40px Arial";
-        ctx.fillText("GAME OVER", 60, 300);
-
-        // リプレイボタン表示
+      
+        const finalScore = Math.floor(score);
+      
+        // Firestore に保存
+        await addDoc(collection(db, "scores"), {
+          name: "名無し",   // 後で入力欄を作ることも可能
+          score: finalScore,
+          date: new Date()
+        });
+      
+        alert("スコアを保存しました！");
+      
         replayButton.style.display = "flex";
       }
 
