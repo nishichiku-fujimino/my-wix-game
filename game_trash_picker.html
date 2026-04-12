@@ -1,6 +1,20 @@
-// Firebase SDK 読み込み
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDKUEGCdlnIIS_1nmMpEzqZ3bc9icLd2aE",
+  authDomain: "wix-game-score.firebaseapp.com",
+  projectId: "wix-game-score",
+  storageBucket: "wix-game-score.firebasestorage.app",
+  messagingSenderId: "207767590781",
+  appId: "1:207767590781:web:8e435affd2a4d82f4b9e14"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
 // Firebase 設定（健のプロジェクトの値に置き換える）
 const firebaseConfig = {
