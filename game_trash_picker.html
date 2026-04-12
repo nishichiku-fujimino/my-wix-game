@@ -13,19 +13,6 @@ const firebaseConfig = {
   appId: "1:207767590781:web:8e435affd2a4d82f4b9e14"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-// Firebase 設定（健のプロジェクトの値に置き換える）
-const firebaseConfig = {
-  apiKey: "AIzaSyDKUEGCdlnIIS_1nmMpEzqZ3bc9icLd2aE",
-  authDomain: "wix-game-score.firebaseapp.com",
-  projectId: "wix-game-score",
-  storageBucket: "wix-game-score.firebasestorage.app",
-  messagingSenderId: "207767590781",
-  appId: "1:207767590781:web:8e435affd2a4d82f4b9e14"
-};
-
 // 初期化
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
