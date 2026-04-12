@@ -123,11 +123,11 @@
     ];
 
     /* -------------------------
-       敵4種
+       敵4種（tall の高さ1.5倍・速度遅め）
        ------------------------- */
     const enemyTypes = {
       normal: { w: 40, h: 40, speed: 6 },
-      tall:   { w: 40, h: 80, speed: 6 },
+      tall:   { w: 40, h: 60, speed: 4 },   // ← 高さ60px・速度4に調整
       jumper: { w: 40, h: 40, speed: 6, jumpPower: -10 },
       flyer:  { w: 40, h: 40, speed: 4, flyHeight: 250 }
     };
@@ -226,6 +226,9 @@
 
     function spawnEnemy() {
       if (gameOver) return;
+
+      // ★ 敵は最大2体まで
+      if (enemies.length >= 2) return;
 
       const type = chooseEnemyType();
       const e = enemyTypes[type];
