@@ -1,138 +1,201 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Ranking</title>
+<head>
+  <meta charset="UTF-8" />
+  <title>Ranking</title>
 
-    <style>
-      body {
-        font-family: Arial, sans-serif;
-        background: #f0f0f0;
-        margin: 0;
-        padding: 20px;
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    #rankingTable {
+      width: 100%;
+      max-width: 450px;
+      margin: 0 auto;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    #rankingTable th, #rankingTable td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
+      text-align: center;
+    }
+
+    #rankingTable th {
+      background: #333;
+      color: #fff;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    #loading {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    .deleteBtn {
+      background: #d9534f;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .deleteBtn:hover {
+      background: #c9302c;
+    }
+
+    #adminKeyInput {
+      width: 200px;
+      padding: 8px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+  </style>
+
+  <!-- Firebase v8（Wix iframe で動く） -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+  <script>
+    // ★ 健の Firebase 設定
+    var firebaseConfig = {
+      apiKey: "AIzaSyDKUEGCdlnIIS_1nmMpEzqZ3bc9icLd2aE",
+      authDomain: "wix-game-score.firebaseapp.com",
+      projectId: "wix-game-score",
+      storageBucket: "wix-game-score.firebasestorage.app",
+      messagingSenderId: "207767590781",
+      appId: "1:207767590781:web:8e435affd2a4d82f4b9e14"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let adminMode = false;
+
+    function enableAdminMode() {
+      const key = document.getElementById("adminKeyInput").value;
+      if (key === "Tnw@2424") {
+        adminMode = true;
+        alert("管理者モード ON");
+        loadRanking();
+      } else {
+        alert("管理者キーが違います");
       }
+    }
 
-      h1 {
-        text-align: center;
-        margin-bottom: 20px;
-      }
+    // ★ ランキング読み込み
+    async function loadRanking() {
+      const tableBody = document.getElementById("rankingBody");
+      const loading = document.getElementById("loading");
 
-      #rankingTable {
-        width: 100%;
-        max-width: 400px;
-        margin: 0 auto;
-        border-collapse: collapse;
-        background: #fff;
-        border-radius: 8px;
-        overflow: hidden;
-      }
+      tableBody.innerHTML = "";
+      loading.textContent = "読み込み中…";
 
-      #rankingTable th, #rankingTable td {
-        padding: 12px;
-        border-bottom: 1px solid #ddd;
-        text-align: center;
-      }
+      try {
+        const snapshot = await db
+          .collection("scores")
+          .orderBy("score", "desc")
+          .limit(100)
+          .get();
 
-      #rankingTable th {
-        background: #333;
-        color: #fff;
-      }
+        loading.style.display = "none";
 
-      tr:nth-child(even) {
-        background: #f9f9f9;
-      }
+        let rank = 1;
 
-      #loading {
-        text-align: center;
-        margin-top: 20px;
-        font-size: 18px;
-      }
-    </style>
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const id = doc.id;
 
-    <!-- Firebase v8（Wix iframe で動く） -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+          const dateStr = data.date
+            ? data.date.toDate().toLocaleString("ja-JP")
+            : "-";
 
-    <script>
-      // ★ 健の Firebase 設定
-      var firebaseConfig = {
-        apiKey: "AIzaSyDKUEGCdlnIIS_1nmMpEzqZ3bc9icLd2aE",
-        authDomain: "wix-game-score.firebaseapp.com",
-        projectId: "wix-game-score",
-        storageBucket: "wix-game-score.firebasestorage.app",
-        messagingSenderId: "207767590781",
-        appId: "1:207767590781:web:8e435affd2a4d82f4b9e14"
-      };
+          const row = document.createElement("tr");
 
-      // Firebase 初期化
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
+          row.innerHTML = `
+            <td>${rank}</td>
+            <td>${data.name}</td>
+            <td>${data.score}</td>
+            <td>${dateStr}</td>
+            <td>
+              ${adminMode ? `<button class="deleteBtn" onclick="deleteScore('${id}')">削除</button>` : ""}
+            </td>
+          `;
 
-      // ★ ランキング読み込み
-      async function loadRanking() {
-        const tableBody = document.getElementById("rankingBody");
-        const loading = document.getElementById("loading");
+          tableBody.appendChild(row);
+          rank++;
+        });
 
-        loading.textContent = "読み込み中…";
-
-        try {
-          const snapshot = await db
-            .collection("scores")
-            .orderBy("score", "desc")
-            .limit(50)
-            .get();
-
-          loading.style.display = "none";
-
-          let rank = 1;
-
-          snapshot.forEach(doc => {
-            const data = doc.data();
-
-            const row = document.createElement("tr");
-
-            row.innerHTML = `
-              <td>${rank}</td>
-              <td>${data.name}</td>
-              <td>${data.score}</td>
-            `;
-
-            tableBody.appendChild(row);
-            rank++;
-          });
-
-          if (rank === 1) {
-            loading.textContent = "まだスコアがありません。";
-            loading.style.display = "block";
-          }
-
-        } catch (e) {
-          console.error("ランキング読み込み失敗:", e);
-          loading.textContent = "読み込みに失敗しました。";
+        if (rank === 1) {
+          loading.textContent = "まだスコアがありません。";
+          loading.style.display = "block";
         }
+
+      } catch (e) {
+        console.error("ランキング読み込み失敗:", e);
+        loading.textContent = "読み込みに失敗しました。";
       }
+    }
 
-      window.onload = loadRanking;
-    </script>
+    // ★ スコア削除（管理者用）
+    async function deleteScore(id) {
+      if (!confirm("本当に削除しますか？")) return;
 
-  </head>
+      try {
+        await db.collection("scores").doc(id).delete();
+        alert("削除しました");
+        loadRanking();
+      } catch (e) {
+        alert("削除に失敗しました");
+        console.error(e);
+      }
+    }
 
-  <body>
+    window.onload = loadRanking;
+  </script>
 
-    <h1>ランキング</h1>
+</head>
 
-    <table id="rankingTable">
-      <thead>
-        <tr>
-          <th>順位</th>
-          <th>名前</th>
-          <th>スコア</th>
-        </tr>
-      </thead>
-      <tbody id="rankingBody"></tbody>
-    </table>
+<body>
 
-    <div id="loading">読み込み中…</div>
+  <h1>ランキング</h1>
 
-  </body>
+  <div style="text-align:center; margin-bottom:15px;">
+    <input id="adminKeyInput" placeholder="管理者キー" />
+    <button onclick="enableAdminMode()">管理者モード</button>
+  </div>
+
+  <table id="rankingTable">
+    <thead>
+      <tr>
+        <th>順位</th>
+        <th>名前</th>
+        <th>スコア</th>
+        <th>日付</th>
+        <th>管理</th>
+      </tr>
+    </thead>
+    <tbody id="rankingBody"></tbody>
+  </table>
+
+  <div id="loading">読み込み中…</div>
+
+</body>
 </html>
