@@ -1,221 +1,238 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8" />
-    <title>Trash Picker Game</title>
+<head>
+  <meta charset="UTF-8" />
+  <title>Trash Picker Game</title>
 
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background: #f0f0f0;
-      }
-      #startScreen, #replayButton {
-        width: 360px;
-        height: 640px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 32px;
-        font-weight: bold;
-        cursor: pointer;
-        user-select: none;
-      }
-      #startScreen {
-        background: #ffffff;
-      }
-      #replayButton {
-        background: rgba(0,0,0,0.6);
-        color: #fff;
-        position: absolute;
-        top: 0;
-        left: 0;
-        display: none;
-      }
-      #gameCanvas {
-        display: none;
-        background: #ffffff;
-      }
-    </style>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+    #startScreen, #replayButton {
+      width: 360px;
+      height: 640px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 32px;
+      font-weight: bold;
+      cursor: pointer;
+      user-select: none;
+    }
+    #startScreen {
+      background: #ffffff;
+      flex-direction: column;
+      gap: 20px;
+    }
+    #replayButton {
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: none;
+    }
+    #nameInput {
+      font-size: 20px;
+      padding: 10px;
+      width: 250px;
+      text-align: center;
+    }
+    #gameCanvas {
+      display: none;
+      background: #ffffff;
+    }
+  </style>
 
-    <!-- ★★★ Firebase SDK（Wix iframe で動く v8 系） ★★★ -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <!-- Firebase v8（Wix iframe で動く） -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
-    <script>
-      // ★ 健の Firebase 設定
-      var firebaseConfig = {
-        apiKey: "AIzaSyDKUEGCdlnIIS_1nmMpEzqZ3bc9icLd2aE",
-        authDomain: "wix-game-score.firebaseapp.com",
-        projectId: "wix-game-score",
-        storageBucket: "wix-game-score.firebasestorage.app",
-        messagingSenderId: "207767590781",
-        appId: "1:207767590781:web:8e435affd2a4d82f4b9e14"
-      };
+  <script>
+    // ★ 健の Firebase 設定
+    var firebaseConfig = {
+      apiKey: "AIzaSyDKUEGCdlnIIS_1nmMpEzqZ3bc9icLd2aE",
+      authDomain: "wix-game-score.firebaseapp.com",
+      projectId: "wix-game-score",
+      storageBucket: "wix-game-score.firebasestorage.app",
+      messagingSenderId: "207767590781",
+      appId: "1:207767590781:web:8e435affd2a4d82f4b9e14"
+    };
 
-      // Firebase 初期化
-      firebase.initializeApp(firebaseConfig);
-      const db = firebase.firestore();
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-      // ★ スコア保存関数
-      async function saveScoreToFirebase(score, name = "名無し") {
-        try {
-          await db.collection("scores").add({
-            name: name,
-            score: score,
-            date: new Date()
-          });
-          console.log("スコア保存成功:", score);
-        } catch (e) {
-          console.error("スコア保存失敗:", e);
+    async function saveScoreToFirebase(score, name) {
+      try {
+        await db.collection("scores").add({
+          name: name,
+          score: score,
+          date: new Date()
+        });
+        console.log("スコア保存成功:", score);
+      } catch (e) {
+        console.error("スコア保存失敗:", e);
+      }
+    }
+  </script>
+
+</head>
+
+<body>
+
+  <div id="startScreen">
+    ▶ PLAY
+    <input id="nameInput" placeholder="名前を入力（任意）" />
+  </div>
+
+  <div id="replayButton">↻ REPLAY</div>
+
+  <canvas id="gameCanvas" width="360" height="640"></canvas>
+
+  <!-- ゲーム本体 -->
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const startScreen = document.getElementById("startScreen");
+    const replayButton = document.getElementById("replayButton");
+    const nameInput = document.getElementById("nameInput");
+
+    startScreen.addEventListener("click", () => {
+      if (!nameInput.value.trim()) {
+        alert("名前を入力してください");
+        return;
+      }
+      startScreen.style.display = "none";
+      canvas.style.display = "block";
+      startGame();
+    });
+
+    replayButton.addEventListener("click", () => {
+      replayButton.style.display = "none";
+      startGame();
+    });
+
+    let player, garbage, obstacles, score, gameOver;
+    const gravity = 0.6;
+    let keys = {};
+
+    function initGame() {
+      player = { x: 50, y: 500, w: 40, h: 40, vy: 0, onGround: true };
+      garbage = [];
+      obstacles = [];
+      score = 0;
+      gameOver = false;
+    }
+
+    function startGame() {
+      initGame();
+      update();
+    }
+
+    document.addEventListener("keydown", (e) => keys[e.key] = true);
+    document.addEventListener("keyup", (e) => keys[e.key] = false);
+
+    function spawnGarbage() {
+      if (gameOver) return;
+      garbage.push({ x: 360, y: 520, w: 30, h: 30 });
+    }
+
+    function spawnObstacle() {
+      if (gameOver) return;
+      obstacles.push({ x: 360, y: 520, w: 40, h: 40 });
+    }
+
+    function isColliding(a, b) {
+      return (
+        a.x < b.x + b.w &&
+        a.x + a.w > b.x &&
+        a.y < b.y + b.h &&
+        a.y + a.h > b.y
+      );
+    }
+
+    function update() {
+      if (gameOver) return;
+
+      if (keys["ArrowLeft"]) player.x -= 4;
+      if (keys["ArrowRight"]) player.x += 4;
+
+      if (keys[" "] && player.onGround) {
+        player.vy = -12;
+        player.onGround = false;
+      }
+
+      player.vy += gravity;
+      player.y += player.vy;
+
+      if (player.y > 500) {
+        player.y = 500;
+        player.vy = 0;
+        player.onGround = true;
+      }
+
+      garbage.forEach(g => g.x -= 4);
+      garbage = garbage.filter(g => g.x > -50);
+
+      obstacles.forEach(o => o.x -= 6);
+      obstacles = obstacles.filter(o => o.x > -50);
+
+      garbage.forEach((g, i) => {
+        if (isColliding(player, g)) {
+          score += 10;
+          garbage.splice(i, 1);
         }
-      }
-    </script>
-
-  </head>
-
-  <body>
-
-    <div id="startScreen">▶ PLAY</div>
-    <div id="replayButton">↻ REPLAY</div>
-    <canvas id="gameCanvas" width="360" height="640"></canvas>
-
-    <!-- ★★★ ゲーム本体 ★★★ -->
-    <script>
-      const canvas = document.getElementById("gameCanvas");
-      const ctx = canvas.getContext("2d");
-      const startScreen = document.getElementById("startScreen");
-      const replayButton = document.getElementById("replayButton");
-
-      startScreen.addEventListener("click", () => {
-        startScreen.style.display = "none";
-        canvas.style.display = "block";
-        startGame();
       });
 
-      replayButton.addEventListener("click", () => {
-        replayButton.style.display = "none";
-        startGame();
+      obstacles.forEach(o => {
+        if (isColliding(player, o)) {
+          endGame();
+        }
       });
 
-      let player, garbage, obstacles, score, gameOver;
-      const gravity = 0.6;
-      let keys = {};
+      score += 0.1;
 
-      function initGame() {
-        player = { x: 50, y: 500, w: 40, h: 40, vy: 0, onGround: true };
-        garbage = [];
-        obstacles = [];
-        score = 0;
-        gameOver = false;
-      }
+      draw();
+      requestAnimationFrame(update);
+    }
 
-      function startGame() {
-        initGame();
-        update();
-      }
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      document.addEventListener("keydown", (e) => keys[e.key] = true);
-      document.addEventListener("keyup", (e) => keys[e.key] = false);
+      ctx.fillStyle = "blue";
+      ctx.fillRect(player.x, player.y, player.w, player.h);
 
-      function spawnGarbage() {
-        if (gameOver) return;
-        garbage.push({ x: 360, y: 520, w: 30, h: 30 });
-      }
+      ctx.fillStyle = "green";
+      garbage.forEach(g => ctx.fillRect(g.x, g.y, g.w, g.h));
 
-      function spawnObstacle() {
-        if (gameOver) return;
-        obstacles.push({ x: 360, y: 520, w: 40, h: 40 });
-      }
+      ctx.fillStyle = "red";
+      obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
 
-      function isColliding(a, b) {
-        return (
-          a.x < b.x + b.w &&
-          a.x + a.w > b.x &&
-          a.y < b.y + b.h &&
-          a.y + a.h > b.y
-        );
-      }
+      ctx.fillStyle = "black";
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + Math.floor(score), 10, 30);
+    }
 
-      function update() {
-        if (gameOver) return;
+    async function endGame() {
+      gameOver = true;
 
-        if (keys["ArrowLeft"]) player.x -= 4;
-        if (keys["ArrowRight"]) player.x += 4;
+      const finalScore = Math.floor(score);
+      const playerName = nameInput.value.trim() || "名無し";
 
-        if (keys[" "] && player.onGround) {
-          player.vy = -12;
-          player.onGround = false;
-        }
+      await saveScoreToFirebase(finalScore, playerName);
 
-        player.vy += gravity;
-        player.y += player.vy;
+      alert("スコアを保存しました！");
+      replayButton.style.display = "flex";
+    }
 
-        if (player.y > 500) {
-          player.y = 500;
-          player.vy = 0;
-          player.onGround = true;
-        }
+    setInterval(spawnGarbage, 1500);
+    setInterval(spawnObstacle, 2000);
 
-        garbage.forEach(g => g.x -= 4);
-        garbage = garbage.filter(g => g.x > -50);
+  </script>
 
-        obstacles.forEach(o => o.x -= 6);
-        obstacles = obstacles.filter(o => o.x > -50);
-
-        garbage.forEach((g, i) => {
-          if (isColliding(player, g)) {
-            score += 10;
-            garbage.splice(i, 1);
-          }
-        });
-
-        obstacles.forEach(o => {
-          if (isColliding(player, o)) {
-            endGame();
-          }
-        });
-
-        score += 0.1;
-
-        draw();
-        requestAnimationFrame(update);
-      }
-
-      function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = "blue";
-        ctx.fillRect(player.x, player.y, player.w, player.h);
-
-        ctx.fillStyle = "green";
-        garbage.forEach(g => ctx.fillRect(g.x, g.y, g.w, g.h));
-
-        ctx.fillStyle = "red";
-        obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
-
-        ctx.fillStyle = "black";
-        ctx.font = "20px Arial";
-        ctx.fillText("Score: " + Math.floor(score), 10, 30);
-      }
-
-      async function endGame() {
-        gameOver = true;
-
-        const finalScore = Math.floor(score);
-
-        // ★ Firebase にスコア保存
-        await saveScoreToFirebase(finalScore, "名無し");
-
-        alert("スコアを保存しました！");
-        replayButton.style.display = "flex";
-      }
-
-      setInterval(spawnGarbage, 1500);
-      setInterval(spawnObstacle, 2000);
-
-    </script>
-
-  </body>
+</body>
 </html>
