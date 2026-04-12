@@ -53,7 +53,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
   <script>
-    // Firebase 設定
     var firebaseConfig = {
       apiKey: "AIzaSyDKUEGCdlnIIS_1nmMpEzqZ3bc9icLd2aE",
       authDomain: "wix-game-score.firebaseapp.com",
@@ -110,18 +109,22 @@
     const gravity = 0.6;
     let keys = {};
 
-    // ゴミ7種（高得点ほどレア）
+    /* -------------------------
+       ゴミ7種（自然な出現比率）
+       ------------------------- */
     const garbageTypes = [
-      { color: "green",  score: 10,  weight: 50 },
-      { color: "yellow", score: 20,  weight: 30 },
+      { color: "green",  score: 10,  weight: 40 },
+      { color: "yellow", score: 20,  weight: 25 },
       { color: "orange", score: 40,  weight: 15 },
-      { color: "red",    score: 80,  weight: 8  },
-      { color: "purple", score: 160, weight: 4  },
-      { color: "blue",   score: 320, weight: 2  },
+      { color: "red",    score: 80,  weight: 10 },
+      { color: "purple", score: 160, weight: 6  },
+      { color: "blue",   score: 320, weight: 3  },
       { color: "gold",   score: 720, weight: 1  }
     ];
 
-    // 敵4種
+    /* -------------------------
+       敵4種
+       ------------------------- */
     const enemyTypes = {
       normal: { w: 40, h: 40, speed: 6 },
       tall:   { w: 40, h: 80, speed: 6 },
@@ -149,7 +152,9 @@
     document.addEventListener("keydown", (e) => keys[e.key] = true);
     document.addEventListener("keyup", (e) => keys[e.key] = false);
 
-    // 難易度更新（1〜7）
+    /* -------------------------
+       難易度基準（10倍版）
+       ------------------------- */
     function updateDifficulty() {
       if (score > 6000) difficulty = 7;
       else if (score > 4000) difficulty = 6;
@@ -160,16 +165,21 @@
       else difficulty = 1;
     }
 
-    // 難易度に応じて出現可能なゴミ
+    /* -------------------------
+       ゴミ：難易度で種類制限
+       ------------------------- */
     function getAvailableGarbageTypes() {
       return garbageTypes.slice(0, difficulty);
     }
 
-    // 重み付きランダム選択
+    /* -------------------------
+       ゴミ：重み付きランダム
+       ------------------------- */
     function chooseWeightedGarbage() {
       const available = getAvailableGarbageTypes();
       const totalWeight = available.reduce((sum, g) => sum + g.weight, 0);
       let r = Math.random() * totalWeight;
+
       for (const g of available) {
         if (r < g.weight) return g;
         r -= g.weight;
@@ -190,19 +200,34 @@
       });
     }
 
-    // 難易度に応じて出現可能な敵
-    function getAvailableEnemyTypes() {
-      if (difficulty <= 1) return ["normal"];
-      if (difficulty == 2) return ["normal", "tall"];
-      if (difficulty == 3) return ["normal", "tall"];
-      if (difficulty == 4) return ["normal", "tall", "jumper"];
-      return ["normal", "tall", "jumper", "flyer"]; // Lv5〜7
+    /* -------------------------
+       敵：難易度で種類制限＋確率調整
+       ------------------------- */
+    function chooseEnemyType() {
+      if (difficulty <= 1) {
+        return "normal";
+      }
+      if (difficulty <= 3) {
+        return Math.random() < 0.7 ? "normal" : "tall";
+      }
+      if (difficulty == 4) {
+        const r = Math.random();
+        if (r < 0.5) return "normal";
+        if (r < 0.8) return "tall";
+        return "jumper";
+      }
+      // Lv5〜7
+      const r = Math.random();
+      if (r < 0.4) return "normal";
+      if (r < 0.7) return "tall";
+      if (r < 0.9) return "jumper";
+      return "flyer";
     }
 
     function spawnEnemy() {
       if (gameOver) return;
-      const available = getAvailableEnemyTypes();
-      const type = available[Math.floor(Math.random() * available.length)];
+
+      const type = chooseEnemyType();
       const e = enemyTypes[type];
 
       enemies.push({
@@ -218,8 +243,11 @@
       });
     }
 
+    /* -------------------------
+       出現頻度（難易度で加速）
+       ------------------------- */
     function getEnemySpawnInterval() {
-      return 2000 - (difficulty - 1) * 200; // 2000→800ms
+      return Math.max(600, 2000 - (difficulty - 1) * 200);
     }
 
     function scheduleEnemySpawn() {
@@ -231,10 +259,13 @@
     function scheduleGarbageSpawn() {
       if (gameOver) return;
       spawnGarbage();
-      const interval = 1500 - (difficulty - 1) * 100; // 少し速く
-      setTimeout(scheduleGarbageSpawn, Math.max(500, interval));
+      const interval = Math.max(400, 1500 - (difficulty - 1) * 120);
+      setTimeout(scheduleGarbageSpawn, interval);
     }
 
+    /* -------------------------
+       空中敵のウンチ落下
+       ------------------------- */
     function updateFlyer(enemy) {
       enemy.x -= enemy.speed;
       enemy.poopTimer++;
@@ -283,6 +314,9 @@
       );
     }
 
+    /* -------------------------
+       メインループ
+       ------------------------- */
     function update() {
       if (gameOver) return;
 
@@ -332,36 +366,37 @@
       requestAnimationFrame(update);
     }
 
+    /* -------------------------
+       描画
+       ------------------------- */
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // プレイヤー
       ctx.fillStyle = "blue";
       ctx.fillRect(player.x, player.y, player.w, player.h);
 
-      // ゴミ
       garbage.forEach(g => {
         ctx.fillStyle = g.color;
         ctx.fillRect(g.x, g.y, g.w, g.h);
       });
 
-      // 敵
       enemies.forEach(e => {
         ctx.fillStyle = "red";
         ctx.fillRect(e.x, e.y, e.w, e.h);
       });
 
-      // ウンチ
       ctx.fillStyle = "brown";
       poops.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
 
-      // UI
       ctx.fillStyle = "black";
       ctx.font = "20px Arial";
       ctx.fillText("Score: " + Math.floor(score), 10, 30);
       ctx.fillText("Lv: " + difficulty, 280, 30);
     }
 
+    /* -------------------------
+       ゲームオーバー
+       ------------------------- */
     async function endGame() {
       gameOver = true;
 
@@ -370,7 +405,6 @@
 
       await saveScoreToFirebase(finalScore, playerName);
 
-      // Wix 親ページへ通知（ランキング更新用）
       window.parent.postMessage({ type: "GAME_OVER" }, "*");
 
       replayButton.style.display = "flex";
