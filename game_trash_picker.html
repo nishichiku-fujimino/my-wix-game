@@ -227,6 +227,7 @@
 
       alert("スコアを保存しました！");
       replayButton.style.display = "flex";
+      window.parent.postMessage({ type: "GAME_OVER" }, "*");
     }
 
     setInterval(spawnGarbage, 1500);
