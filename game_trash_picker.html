@@ -1,19 +1,16 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyDKUEGCdlnIIS_1nmMpEzqZ3bc9icLd2aE",
-  authDomain: "wix-game-score.firebaseapp.com",
-  projectId: "wix-game-score",
-  storageBucket: "wix-game-score.firebasestorage.app",
-  messagingSenderId: "207767590781",
-  appId: "1:207767590781:web:8e435affd2a4d82f4b9e14"
+  apiKey: "健のAPIキー",
+  authDomain: "健のauthDomain",
+  projectId: "健のprojectId",
+  storageBucket: "健のstorageBucket",
+  messagingSenderId: "健のsenderId",
+  appId: "健のappId"
 };
 
-// 初期化
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
