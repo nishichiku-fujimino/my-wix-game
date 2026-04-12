@@ -1,0 +1,232 @@
+<html>
+  <body style="margin:0; padding:0; overflow:hidden; background:#f0f0f0;">
+
+    <!-- スタート画面 -->
+    <div id="startScreen" style="
+      width:360px; height:640px;
+      display:flex; justify-content:center; align-items:center;
+      background:#ffffff; font-size:32px; font-weight:bold;
+      cursor:pointer; user-select:none;
+    ">
+      ▶ PLAY
+    </div>
+
+    <!-- リプレイボタン（最初は非表示） -->
+    <div id="replayButton" style="
+      width:360px; height:640px;
+      display:none; justify-content:center; align-items:center;
+      background:rgba(0,0,0,0.6); color:#fff;
+      font-size:32px; font-weight:bold;
+      cursor:pointer; user-select:none;
+      position:absolute; top:0; left:0;
+    ">
+      ↻ REPLAY
+    </div>
+
+    <!-- ゲーム画面 -->
+    <canvas id="gameCanvas" width="360" height="640" style="display:none; background:#ffffff;"></canvas>
+
+    <script>
+      const canvas = document.getElementById("gameCanvas");
+      const ctx = canvas.getContext("2d");
+      const startScreen = document.getElementById("startScreen");
+      const replayButton = document.getElementById("replayButton");
+
+      // ============================
+      // ゲーム開始処理
+      // ============================
+      startScreen.addEventListener("click", () => {
+        startScreen.style.display = "none";
+        canvas.style.display = "block";
+        startGame();
+      });
+
+      // ============================
+      // リプレイ処理
+      // ============================
+      replayButton.addEventListener("click", () => {
+        replayButton.style.display = "none";
+        startGame();
+      });
+
+      // ============================
+      // ゲーム変数
+      // ============================
+      let player, garbage, obstacles, score, gameOver;
+      const gravity = 0.6;
+      let keys = {};
+
+      // ============================
+      // ゲーム初期化
+      // ============================
+      function initGame() {
+        player = { x: 50, y: 500, w: 40, h: 40, vy: 0, onGround: true };
+        garbage = [];
+        obstacles = [];
+        score = 0;
+        gameOver = false;
+      }
+
+      // ============================
+      // ゲーム開始
+      // ============================
+      function startGame() {
+        initGame();
+        update();
+      }
+
+      // ============================
+      // キー入力
+      // ============================
+      document.addEventListener("keydown", (e) => keys[e.key] = true);
+      document.addEventListener("keyup", (e) => keys[e.key] = false);
+
+      // ============================
+      // ゴミ生成（高さ固定に修正）
+      // ============================
+      function spawnGarbage() {
+        if (gameOver) return;
+        garbage.push({
+          x: 360,
+          y: 520,   // ← プレイヤーと同じ地面の高さに固定
+          w: 30,
+          h: 30
+        });
+      }
+
+      // ============================
+      // 障害物生成
+      // ============================
+      function spawnObstacle() {
+        if (gameOver) return;
+        obstacles.push({
+          x: 360,
+          y: 520,
+          w: 40,
+          h: 40
+        });
+      }
+
+      // ============================
+      // 当たり判定
+      // ============================
+      function isColliding(a, b) {
+        return (
+          a.x < b.x + b.w &&
+          a.x + a.w > b.x &&
+          a.y < b.y + b.h &&
+          a.y + a.h > b.y
+        );
+      }
+
+      // ============================
+      // ゲームループ
+      // ============================
+      function update() {
+        if (gameOver) return;
+
+        // プレイヤー移動
+        if (keys["ArrowLeft"]) player.x -= 4;
+        if (keys["ArrowRight"]) player.x += 4;
+
+        // ジャンプ
+        if (keys[" "] && player.onGround) {
+          player.vy = -12;
+          player.onGround = false;
+        }
+
+        // 重力
+        player.vy += gravity;
+        player.y += player.vy;
+
+        // 地面
+        if (player.y > 500) {
+          player.y = 500;
+          player.vy = 0;
+          player.onGround = true;
+        }
+
+        // ゴミ移動
+        garbage.forEach(g => g.x -= 4);
+        garbage = garbage.filter(g => g.x > -50);
+
+        // 障害物移動
+        obstacles.forEach(o => o.x -= 6);
+        obstacles = obstacles.filter(o => o.x > -50);
+
+        // ゴミ取得
+        garbage.forEach((g, i) => {
+          if (isColliding(player, g)) {
+            score += 10;
+            garbage.splice(i, 1);
+          }
+        });
+
+        // 障害物衝突
+        obstacles.forEach(o => {
+          if (isColliding(player, o)) {
+            endGame();
+          }
+        });
+
+        // 距離スコア
+        score += 0.1;
+
+        draw();
+        requestAnimationFrame(update);
+      }
+
+      // ============================
+      // 描画
+      // ============================
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // プレイヤー
+        ctx.fillStyle = "blue";
+        ctx.fillRect(player.x, player.y, player.w, player.h);
+
+        // ゴミ
+        ctx.fillStyle = "green";
+        garbage.forEach(g => ctx.fillRect(g.x, g.y, g.w, g.h));
+
+        // 障害物
+        ctx.fillStyle = "red";
+        obstacles.forEach(o => ctx.fillRect(o.x, o.y, o.w, o.h));
+
+        // スコア
+        ctx.fillStyle = "black";
+        ctx.font = "20px Arial";
+        ctx.fillText("Score: " + Math.floor(score), 10, 30);
+      }
+
+      // ============================
+      // ゲーム終了
+      // ============================
+      function endGame() {
+        gameOver = true;
+
+        // Wix へスコア送信
+        window.parent.postMessage({
+          type: "GAME_OVER",
+          score: Math.floor(score)
+        }, "*");
+
+        // GAME OVER 表示
+        ctx.fillStyle = "black";
+        ctx.font = "40px Arial";
+        ctx.fillText("GAME OVER", 60, 300);
+
+        // リプレイボタン表示
+        replayButton.style.display = "flex";
+      }
+
+      // ============================
+      // 生成タイマー
+      // ============================
+      setInterval(spawnGarbage, 1500);
+      setInterval(spawnObstacle, 2000);
+    </script>
+
+  </body>
+</html>
