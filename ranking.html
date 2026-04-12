@@ -89,15 +89,27 @@
 
     let adminMode = false;
 
-    function enableAdminMode() {
-      const key = document.getElementById("adminKeyInput").value;
-      if (key === "fujimino2025") {
-        adminMode = true;
-        alert("管理者モード ON");
-        loadRanking();
-      } else {
-        alert("管理者キーが違います");
+    // ★ 管理者モード トグル
+    function toggleAdminMode() {
+      const keyInput = document.getElementById("adminKeyInput");
+      const btn = document.getElementById("adminToggleBtn");
+
+      // OFF → ON
+      if (!adminMode) {
+        if (keyInput.value === "fujimino2025") {
+          adminMode = true;
+          btn.textContent = "管理者モード OFF";
+          loadRanking();
+        } else {
+          alert("管理者キーが違います");
+        }
+        return;
       }
+
+      // ON → OFF
+      adminMode = false;
+      btn.textContent = "管理者モード ON";
+      loadRanking();
     }
 
     // ★ ランキング表示（リアルタイム更新）
@@ -147,17 +159,9 @@
         });
     }
 
-    // ★ スコア削除（管理者用）
+    // ★ スコア削除（アラートなし）
     async function deleteScore(id) {
-      if (!confirm("本当に削除しますか？")) return;
-
-      try {
-        await db.collection("scores").doc(id).delete();
-        alert("削除しました");
-      } catch (e) {
-        alert("削除に失敗しました");
-        console.error(e);
-      }
+      await db.collection("scores").doc(id).delete();
     }
 
     window.onload = loadRanking;
@@ -171,7 +175,7 @@
 
   <div style="text-align:center; margin-bottom:15px;">
     <input id="adminKeyInput" placeholder="管理者キー" />
-    <button onclick="enableAdminMode()">管理者モード</button>
+    <button id="adminToggleBtn" onclick="toggleAdminMode()">管理者モード ON</button>
   </div>
 
   <table id="rankingTable">
