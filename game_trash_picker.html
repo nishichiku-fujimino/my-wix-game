@@ -108,9 +108,10 @@
     let player, garbage, enemies, poops, score, gameOver, difficulty;
     const gravity = 0.6;
     let keys = {};
+    let jumpKeyPressed = false;  // ★ 押しっぱなし防止
 
     /* -------------------------
-       ゴミ7種（自然な出現比率）
+       ゴミ7種
        ------------------------- */
     const garbageTypes = [
       { color: "green",  score: 10,  weight: 40 },
@@ -157,8 +158,29 @@
       scheduleGarbageSpawn();
     }
 
-    document.addEventListener("keydown", (e) => keys[e.key] = true);
-    document.addEventListener("keyup", (e) => keys[e.key] = false);
+    /* -------------------------
+       キー入力
+       ------------------------- */
+    document.addEventListener("keydown", (e) => {
+      if (e.key === " ") {
+        if (!jumpKeyPressed) {
+          if (player.jumpCount < 2) {
+            if (player.jumpCount === 0) player.vy = -12;
+            else player.vy = -10;
+
+            player.onGround = false;
+            player.jumpCount++;
+          }
+        }
+        jumpKeyPressed = true;
+      }
+      keys[e.key] = true;
+    });
+
+    document.addEventListener("keyup", (e) => {
+      if (e.key === " ") jumpKeyPressed = false;
+      keys[e.key] = false;
+    });
 
     /* -------------------------
        難易度
@@ -313,7 +335,7 @@
     }
 
     /* -------------------------
-       ★ 2段ジャンプ対応メインループ
+       メインループ
        ------------------------- */
     function update() {
       if (gameOver) return;
@@ -323,32 +345,14 @@
       if (keys["ArrowLeft"]) player.x -= 4;
       if (keys["ArrowRight"]) player.x += 4;
 
-      /* -------------------------
-         ★ 2段ジャンプ処理
-         ------------------------- */
-      if (keys[" "]) {
-        if (player.jumpCount < 2) {
-          if (player.jumpCount === 0) {
-            player.vy = -12;   // 1段目：強い
-          } else {
-            player.vy = -10;   // 2段目：弱い
-          }
-          player.onGround = false;
-          player.jumpCount++;
-        }
-      }
-
       player.vy += gravity;
       player.y += player.vy;
 
-      /* -------------------------
-         ★ 着地したらジャンプ回数リセット
-         ------------------------- */
       if (player.y > 500) {
         player.y = 500;
         player.vy = 0;
         player.onGround = true;
-        player.jumpCount = 0;
+        player.jumpCount = 0;  // ★ 着地でリセット
       }
 
       garbage.forEach(g => g.x -= 4);
@@ -424,5 +428,4 @@
   </script>
 
 </body>
-
 </html>
