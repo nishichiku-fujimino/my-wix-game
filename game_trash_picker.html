@@ -244,45 +244,47 @@
     });
   }
 
+  // ★ flyer 出現率 15% ベース
   function chooseEnemyType() {
     const r = Math.random();
-  
-    // ★ flyer は常に 15% の確率で出現
+
+    // flyer は常に 15%
     if (r < 0.15) {
       return "flyer";
     }
-  
-    // ★ 残り 85% を地上敵で配分
+
+    // 残り 85% を地上敵で配分
     const gr = Math.random();
-  
+
     if (difficulty <= 1) {
       return "normal";
     }
-  
+
     if (difficulty <= 3) {
       return gr < 0.7 ? "normal" : "tall";
     }
-  
+
     if (difficulty == 4) {
       if (gr < 0.6) return "normal";
       if (gr < 0.9) return "tall";
       return "jumper";
     }
-  
+
     // difficulty 5〜7
     if (gr < 0.5) return "normal";
     if (gr < 0.8) return "tall";
     return "jumper";
   }
 
+  // ★ flyer は常に低速、地上敵のみ難易度で加速
   function getEnemySpeed(type, baseSpeed) {
     if (type === "flyer") {
-      return 2.5;   // ★ flyer は常に低速（ウンチを落とす時間を確保）
+      return 2.5;
     }
-    return baseSpeed + difficulty * 0.8;  // ★ 地上敵だけ加速
+    return baseSpeed + difficulty * 0.8;
   }
 
-  /* ★★★ 地上敵1体 + 空中敵1体 同時出現可能 ★★★ */
+  // 地上敵1体 + 空中敵1体 同時出現可能
   function spawnEnemy() {
     if (gameOver) return;
 
@@ -304,11 +306,11 @@
 
     enemies.push({
       type,
-      x: 360,   // ★ 画面右端
+      x: 360,   // 画面右端
       y: type === "flyer" ? e.flyHeight : GROUND_BOTTOM - e.h,
       w: e.w,
       h: e.h,
-      speed: getEnemySpeed(type, e.speed),   // ★ flyer は低速、地上敵は加速
+      speed: getEnemySpeed(type, e.speed),
       vy: 0,
       jumpPower: e.jumpPower || 0,
       poopTimer: 0
@@ -354,37 +356,33 @@
 
   function updateEnemies() {
     enemies.forEach(e => {
-  
       if (e.type === "jumper") {
         if (Math.random() < 0.02) e.vy = e.jumpPower;
         e.vy += gravity;
         e.y += e.vy;
-  
+
         if (e.y > GROUND_BOTTOM - e.h) {
           e.y = GROUND_BOTTOM - e.h;
           e.vy = 0;
         }
-  
+
       } else if (e.type === "flyer") {
         updateFlyer(e);
-  
+
       } else {
         e.x -= e.speed;
       }
-  
+
       e.y = Math.round(e.y);
     });
-  
-    // ★★★ 決定的修正 ★★★
-    // x 方向だけでなく y 方向もチェックして削除
+
+    // 画面外に出た敵を確実に削除（x と y 両方を見る）
     enemies = enemies.filter(e =>
-      e.x + e.w > 0 &&      // 画面左に消えていない
-      e.y + e.h > 0 &&      // 上に消えていない
-      e.y < 640             // 下に消えていない
+      e.x + e.w > 0 &&   // 左に消えていない
+      e.y + e.h > 0 &&   // 上に消えていない
+      e.y < 640          // 下に消えていない
     );
   }
-
-
 
   function isColliding(a, b) {
     return (
