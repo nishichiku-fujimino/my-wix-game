@@ -121,7 +121,7 @@
   </div>
 
   <script>
-    const VERSION = "v1.1.3";
+    const VERSION = "v1.1.4";
     const GROUND_BOTTOM = 540;
 
     const canvas = document.getElementById("gameCanvas");
@@ -261,17 +261,18 @@
       return "flyer";
     }
 
-    /* ★★★ v1.1.3 修正：flyer は重なりチェックをスキップ ★★★ */
+    /* ★★★ v1.1.4 修正：敵の同時出現数を 1 に変更 ★★★ */
     function spawnEnemy() {
       if (gameOver) return;
-      if (enemies.length >= 2) return;
+
+      // ★ Level4 以降で敵が出なくなる原因を解消
+      if (enemies.length >= 1) return;
 
       const type = chooseEnemyType();
       const e = enemyTypes[type];
 
       const lastGarbage = garbage[garbage.length - 1];
 
-      // ★ flyer はゴミと重なっても問題ないのでスキップ
       if (type !== "flyer") {
         if (lastGarbage && lastGarbage.x > 360 - e.w) {
           return;
