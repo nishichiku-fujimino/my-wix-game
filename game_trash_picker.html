@@ -102,7 +102,6 @@
       }
     }
   </script>
-
 </head>
 
 <body>
@@ -121,354 +120,353 @@
   </div>
 
   <script>
-    const VERSION = "v1.1.5";
-    const GROUND_BOTTOM = 540;
+  const VERSION = "v1.1.6";
+  const GROUND_BOTTOM = 540;
 
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    const startScreen = document.getElementById("startScreen");
-    const replayButton = document.getElementById("replayButton");
-    const nameInput = document.getElementById("nameInput");
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
+  const startScreen = document.getElementById("startScreen");
+  const replayButton = document.getElementById("replayButton");
+  const nameInput = document.getElementById("nameInput");
 
-    startScreen.addEventListener("click", () => {
-      startScreen.style.display = "none";
-      startGame();
-    });
+  startScreen.addEventListener("click", () => {
+    startScreen.style.display = "none";
+    startGame();
+  });
 
-    replayButton.addEventListener("click", () => {
-      replayButton.style.display = "none";
-      startGame();
-    });
+  replayButton.addEventListener("click", () => {
+    replayButton.style.display = "none";
+    startGame();
+  });
 
-    let player, garbage, enemies, poops, score, gameOver, difficulty;
-    const gravity = 0.6;
-    let keys = {};
-    let jumpKeyPressed = false;
+  let player, garbage, enemies, poops, score, gameOver, difficulty;
+  const gravity = 0.6;
+  let keys = {};
+  let jumpKeyPressed = false;
 
-    const garbageTypes = [
-      { color: "green",  score: 10,  weight: 40 },
-      { color: "yellow", score: 20,  weight: 25 },
-      { color: "orange", score: 40,  weight: 15 },
-      { color: "red",    score: 80,  weight: 10 },
-      { color: "purple", score: 160, weight: 6  },
-      { color: "blue",   score: 320, weight: 3  },
-      { color: "gold",   score: 720, weight: 1  }
-    ];
+  const garbageTypes = [
+    { color: "green",  score: 10,  weight: 40 },
+    { color: "yellow", score: 20,  weight: 25 },
+    { color: "orange", score: 40,  weight: 15 },
+    { color: "red",    score: 80,  weight: 10 },
+    { color: "purple", score: 160, weight: 6  },
+    { color: "blue",   score: 320, weight: 3  },
+    { color: "gold",   score: 720, weight: 1  }
+  ];
 
-    const enemyTypes = {
-      normal: { w: 40, h: 40, speed: 6 },
-      tall:   { w: 40, h: 60, speed: 4 },
-      jumper: { w: 40, h: 40, speed: 6, jumpPower: -10 },
-      flyer:  { w: 40, h: 40, speed: 4, flyHeight: 250 }
+  const enemyTypes = {
+    normal: { w: 40, h: 40, speed: 6 },
+    tall:   { w: 40, h: 60, speed: 4 },
+    jumper: { w: 40, h: 40, speed: 6, jumpPower: -10 },
+    flyer:  { w: 40, h: 40, speed: 4, flyHeight: 250 }
+  };
+
+  function initGame() {
+    player = { 
+      x: 50, 
+      y: GROUND_BOTTOM - 40,
+      w: 40, 
+      h: 40, 
+      vy: 0, 
+      onGround: true,
+      jumpCount: 0
     };
+    garbage = [];
+    enemies = [];
+    poops = [];
+    score = 0;
+    gameOver = false;
+    difficulty = 1;
+  }
 
-    function initGame() {
-      player = { 
-        x: 50, 
-        y: GROUND_BOTTOM - 40,
-        w: 40, 
-        h: 40, 
-        vy: 0, 
-        onGround: true,
-        jumpCount: 0
-      };
-      garbage = [];
-      enemies = [];
-      poops = [];
-      score = 0;
-      gameOver = false;
-      difficulty = 1;
-    }
+  function startGame() {
+    initGame();
+    update();
+    scheduleEnemySpawn();
+    scheduleGarbageSpawn();
+  }
 
-    function startGame() {
-      initGame();
-      update();
-      scheduleEnemySpawn();
-      scheduleGarbageSpawn();
-    }
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === " ") {
-        if (!jumpKeyPressed) {
-          if (player.jumpCount < 2) {
-            player.vy = player.jumpCount === 0 ? -12 : -10;
-            player.onGround = false;
-            player.jumpCount++;
-          }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === " ") {
+      if (!jumpKeyPressed) {
+        if (player.jumpCount < 2) {
+          player.vy = player.jumpCount === 0 ? -12 : -10;
+          player.onGround = false;
+          player.jumpCount++;
         }
-        jumpKeyPressed = true;
       }
-      keys[e.key] = true;
+      jumpKeyPressed = true;
+    }
+    keys[e.key] = true;
+  });
+
+  document.addEventListener("keyup", (e) => {
+    if (e.key === " ") jumpKeyPressed = false;
+    keys[e.key] = false;
+  });
+
+  function updateDifficulty() {
+    if (score > 6000) difficulty = 7;
+    else if (score > 4000) difficulty = 6;
+    else if (score > 2500) difficulty = 5;
+    else if (score > 1500) difficulty = 4;
+    else if (score > 800) difficulty = 3;
+    else if (score > 300) difficulty = 2;
+    else difficulty = 1;
+  }
+
+  function getAvailableGarbageTypes() {
+    return garbageTypes.slice(0, difficulty);
+  }
+
+  function chooseWeightedGarbage() {
+    const available = getAvailableGarbageTypes();
+    const totalWeight = available.reduce((sum, g) => sum + g.weight, 0);
+    let r = Math.random() * totalWeight;
+
+    for (const g of available) {
+      if (r < g.weight) return g;
+      r -= g.weight;
+    }
+    return available[0];
+  }
+
+  function spawnGarbage() {
+    if (gameOver) return;
+    const type = chooseWeightedGarbage();
+    garbage.push({
+      x: 360,
+      y: GROUND_BOTTOM - 30,
+      w: 30,
+      h: 30,
+      color: type.color,
+      score: type.score
     });
+  }
 
-    document.addEventListener("keyup", (e) => {
-      if (e.key === " ") jumpKeyPressed = false;
-      keys[e.key] = false;
-    });
-
-    function updateDifficulty() {
-      if (score > 6000) difficulty = 7;
-      else if (score > 4000) difficulty = 6;
-      else if (score > 2500) difficulty = 5;
-      else if (score > 1500) difficulty = 4;
-      else if (score > 800) difficulty = 3;
-      else if (score > 300) difficulty = 2;
-      else difficulty = 1;
-    }
-
-    function getAvailableGarbageTypes() {
-      return garbageTypes.slice(0, difficulty);
-    }
-
-    function chooseWeightedGarbage() {
-      const available = getAvailableGarbageTypes();
-      const totalWeight = available.reduce((sum, g) => sum + g.weight, 0);
-      let r = Math.random() * totalWeight;
-
-      for (const g of available) {
-        if (r < g.weight) return g;
-        r -= g.weight;
-      }
-      return available[0];
-    }
-
-    function spawnGarbage() {
-      if (gameOver) return;
-      const type = chooseWeightedGarbage();
-      garbage.push({
-        x: 360,
-        y: GROUND_BOTTOM - 30,
-        w: 30,
-        h: 30,
-        color: type.color,
-        score: type.score
-      });
-    }
-
-    function chooseEnemyType() {
-      if (difficulty <= 1) return "normal";
-      if (difficulty <= 3) return Math.random() < 0.7 ? "normal" : "tall";
-      if (difficulty == 4) {
-        const r = Math.random();
-        if (r < 0.5) return "normal";
-        if (r < 0.8) return "tall";
-        return "jumper";
-      }
+  function chooseEnemyType() {
+    if (difficulty <= 1) return "normal";
+    if (difficulty <= 3) return Math.random() < 0.7 ? "normal" : "tall";
+    if (difficulty == 4) {
       const r = Math.random();
-      if (r < 0.4) return "normal";
-      if (r < 0.7) return "tall";
-      if (r < 0.9) return "jumper";
-      return "flyer";
+      if (r < 0.5) return "normal";
+      if (r < 0.8) return "tall";
+      return "jumper";
     }
+    const r = Math.random();
+    if (r < 0.4) return "normal";
+    if (r < 0.7) return "tall";
+    if (r < 0.9) return "jumper";
+    return "flyer";
+  }
 
-    /* ★★★ v1.1.5 修正：地上敵1体 + 空中敵1体 同時出現可能 ★★★ */
-    function spawnEnemy() {
-      if (gameOver) return;
+  /* ★★★ v1.1.6 の決定的修正：敵スピードを難易度で加速 ★★★ */
+  function getEnemySpeed(baseSpeed) {
+    return baseSpeed + difficulty * 0.8;
+  }
 
-      // ★ 現在の敵数をタイプ別にカウント
-      const groundEnemies = enemies.filter(e => e.type !== "flyer").length;
-      const flyerEnemies  = enemies.filter(e => e.type === "flyer").length;
+  /* ★★★ 地上敵1体 + 空中敵1体 同時出現可能 ★★★ */
+  function spawnEnemy() {
+    if (gameOver) return;
 
-      const type = chooseEnemyType();
-      const e = enemyTypes[type];
+    const groundEnemies = enemies.filter(e => e.type !== "flyer").length;
+    const flyerEnemies  = enemies.filter(e => e.type === "flyer").length;
 
-      // ★ 地上敵は1体まで
-      if (type !== "flyer" && groundEnemies >= 1) return;
+    const type = chooseEnemyType();
+    const e = enemyTypes[type];
 
-      // ★ 空中敵は1体まで
-      if (type === "flyer" && flyerEnemies >= 1) return;
+    if (type !== "flyer" && groundEnemies >= 1) return;
+    if (type === "flyer" && flyerEnemies >= 1) return;
 
-      // ★ ゴミとの重なりチェック（地上敵のみ）
-      const lastGarbage = garbage[garbage.length - 1];
-      if (type !== "flyer") {
-        if (lastGarbage && lastGarbage.x > 360 - e.w) {
-          return;
-        }
-      }
-
-      // ★ 敵を追加
-      enemies.push({
-        type,
-        x: 360,
-        y: type === "flyer" ? e.flyHeight : GROUND_BOTTOM - e.h,
-        w: e.w,
-        h: e.h,
-        speed: e.speed,
-        vy: 0,
-        jumpPower: e.jumpPower || 0,
-        poopTimer: 0
-      });
-    }
-
-    function getEnemySpawnInterval() {
-      return Math.max(600, 2000 - (difficulty - 1) * 200);
-    }
-
-    function scheduleEnemySpawn() {
-      if (gameOver) return;
-      spawnEnemy();
-      setTimeout(scheduleEnemySpawn, getEnemySpawnInterval());
-    }
-
-    function scheduleGarbageSpawn() {
-      if (gameOver) return;
-      spawnGarbage();
-      const interval = Math.max(400, 1500 - (difficulty - 1) * 120);
-      setTimeout(scheduleGarbageSpawn, interval);
-    }
-
-    function updateFlyer(enemy) {
-      enemy.x -= enemy.speed;
-      enemy.poopTimer++;
-      if (enemy.poopTimer > 60) {
-        enemy.poopTimer = 0;
-        poops.push({
-          x: enemy.x + enemy.w / 2,
-          y: enemy.y + enemy.h,
-          w: 20,
-          h: 20,
-          vy: 5
-        });
+    const lastGarbage = garbage[garbage.length - 1];
+    if (type !== "flyer") {
+      if (lastGarbage && lastGarbage.x > 360 - e.w) {
+        return;
       }
     }
 
-    function updatePoops() {
-      poops.forEach(p => p.y += p.vy);
-      poops = poops.filter(p => p.y < 640);
+    enemies.push({
+      type,
+      x: 360,
+      y: type === "flyer" ? e.flyHeight : GROUND_BOTTOM - e.h,
+      w: e.w,
+      h: e.h,
+      speed: getEnemySpeed(e.speed),  // ★ 難易度で加速
+      vy: 0,
+      jumpPower: e.jumpPower || 0,
+      poopTimer: 0
+    });
+  }
+
+  function getEnemySpawnInterval() {
+    return Math.max(600, 2000 - (difficulty - 1) * 200);
+  }
+
+  function scheduleEnemySpawn() {
+    if (gameOver) return;
+    spawnEnemy();
+    setTimeout(scheduleEnemySpawn, getEnemySpawnInterval());
+  }
+
+  function scheduleGarbageSpawn() {
+    if (gameOver) return;
+    spawnGarbage();
+    const interval = Math.max(400, 1500 - (difficulty - 1) * 120);
+    setTimeout(scheduleGarbageSpawn, interval);
+  }
+
+  function updateFlyer(enemy) {
+    enemy.x -= enemy.speed;
+    enemy.poopTimer++;
+    if (enemy.poopTimer > 60) {
+      enemy.poopTimer = 0;
+      poops.push({
+        x: enemy.x + enemy.w / 2,
+        y: enemy.y + enemy.h,
+        w: 20,
+        h: 20,
+        vy: 5
+      });
     }
+  }
 
-    function updateEnemies() {
-      enemies.forEach(e => {
-        if (e.type === "jumper") {
-          if (Math.random() < 0.02) e.vy = e.jumpPower;
-          e.vy += gravity;
-          e.y += e.vy;
+  function updatePoops() {
+    poops.forEach(p => p.y += p.vy);
+    poops = poops.filter(p => p.y < 640);
+  }
 
-          if (e.y > GROUND_BOTTOM - e.h) {
-            e.y = GROUND_BOTTOM - e.h;
-            e.vy = 0;
-          }
+  function updateEnemies() {
+    enemies.forEach(e => {
+      if (e.type === "jumper") {
+        if (Math.random() < 0.02) e.vy = e.jumpPower;
+        e.vy += gravity;
+        e.y += e.vy;
 
-        } else if (e.type === "flyer") {
-          updateFlyer(e);
-
-        } else {
-          e.x -= e.speed;
+        if (e.y > GROUND_BOTTOM - e.h) {
+          e.y = GROUND_BOTTOM - e.h;
+          e.vy = 0;
         }
 
-        e.y = Math.round(e.y);
-      });
+      } else if (e.type === "flyer") {
+        updateFlyer(e);
 
-      enemies = enemies.filter(e => e.x > -100);
-    }
-
-    function isColliding(a, b) {
-      return (
-        a.x < b.x + b.w &&
-        a.x + a.w > b.x &&
-        a.y < b.y + b.h &&
-        a.y + a.h > b.y
-      );
-    }
-
-    function update() {
-      if (gameOver) return;
-
-      updateDifficulty();
-
-      if (keys["ArrowLeft"]) player.x -= 4;
-      if (keys["ArrowRight"]) player.x += 4;
-
-      player.vy += gravity;
-      player.y += player.vy;
-
-      if (player.y >= GROUND_BOTTOM - player.h) {
-        player.y = GROUND_BOTTOM - player.h;
-        player.vy = 0;
-        player.onGround = true;
-        player.jumpCount = 0;
+      } else {
+        e.x -= e.speed;
       }
 
-      garbage.forEach(g => g.x -= 4);
-      garbage = garbage.filter(g => g.x > -50);
+      e.y = Math.round(e.y);
+    });
 
-      updateEnemies();
-      updatePoops();
+    enemies = enemies.filter(e => e.x > -100);
+  }
 
-      garbage.forEach((g, i) => {
-        if (isColliding(player, g)) {
-          score += g.score;
-          garbage.splice(i, 1);
-        }
-      });
+  function isColliding(a, b) {
+    return (
+      a.x < b.x + b.w &&
+      a.x + a.w > b.x &&
+      a.y < b.y + b.h &&
+      a.y + a.h > b.y
+    );
+  }
 
-      enemies.forEach(e => {
-        if (isColliding(player, e)) endGame();
-      });
+  function update() {
+    if (gameOver) return;
 
-      poops.forEach(p => {
-        if (isColliding(player, p)) endGame();
-      });
+    updateDifficulty();
 
-      score += 0.1;
+    if (keys["ArrowLeft"]) player.x -= 4;
+    if (keys["ArrowRight"]) player.x += 4;
 
-      draw();
-      requestAnimationFrame(update);
+    player.vy += gravity;
+    player.y += player.vy;
+
+    if (player.y >= GROUND_BOTTOM - player.h) {
+      player.y = GROUND_BOTTOM - player.h;
+      player.vy = 0;
+      player.onGround = true;
+      player.jumpCount = 0;
     }
 
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    garbage.forEach(g => g.x -= 4);
+    garbage = garbage.filter(g => g.x > -50);
 
-      ctx.fillStyle = "blue";
-      ctx.fillRect(player.x, player.y, player.w, player.h);
+    updateEnemies();
+    updatePoops();
 
-      garbage.forEach(g => {
-        ctx.fillStyle = g.color;
-        ctx.fillRect(g.x, g.y, g.w, g.h);
-      });
+    garbage.forEach((g, i) => {
+      if (isColliding(player, g)) {
+        score += g.score;
+        garbage.splice(i, 1);
+      }
+    });
 
-      enemies.forEach(e => {
-        ctx.fillStyle = "red";
-        ctx.fillRect(e.x, e.y, e.w, e.h);
-      });
+    enemies.forEach(e => {
+      if (isColliding(player, e)) endGame();
+    });
 
-      ctx.fillStyle = "brown";
-      poops.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+    poops.forEach(p => {
+      if (isColliding(player, p)) endGame();
+    });
 
-      ctx.fillStyle = "black";
-      ctx.font = "20px Arial";
-      ctx.fillText("Score: " + Math.floor(score), 10, 30);
-      ctx.fillText("Lv: " + difficulty, 280, 30);
+    score += 0.1;
 
-      ctx.font = "14px Arial";
-      ctx.fillText("Trash Picker " + VERSION, 10, 60);
+    draw();
+    requestAnimationFrame(update);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "blue";
+    ctx.fillRect(player.x, player.y, player.w, player.h);
+
+    garbage.forEach(g => {
+      ctx.fillStyle = g.color;
+      ctx.fillRect(g.x, g.y, g.w, g.h);
+    });
+
+    enemies.forEach(e => {
+      ctx.fillStyle = "red";
+      ctx.fillRect(e.x, e.y, e.w, e.h);
+    });
+
+    ctx.fillStyle = "brown";
+    poops.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
+
+    ctx.fillStyle = "black";
+    ctx.font = "20px Arial";
+    ctx.fillText("Score: " + Math.floor(score), 10, 30);
+    ctx.fillText("Lv: " + difficulty, 280, 30);
+
+    ctx.font = "14px Arial";
+    ctx.fillText("Trash Picker " + VERSION, 10, 60);
+  }
+
+  async function endGame() {
+    if (gameOver) return;
+    gameOver = true;
+
+    const finalScore = Math.floor(score);
+    const playerName = nameInput.value.trim() || "名無し";
+
+    try {
+      window.parent.postMessage({ type: "GAME_OVER" }, "*");
+    } catch (e) {
+      console.log("postMessage error:", e);
     }
 
-    async function endGame() {
-      if (gameOver) return;
-      gameOver = true;
-
-      const finalScore = Math.floor(score);
-      const playerName = nameInput.value.trim() || "名無し";
-
+    (async () => {
       try {
-        window.parent.postMessage({ type: "GAME_OVER" }, "*");
+        await saveScoreToFirebase(finalScore, playerName);
+        await cleanupTop10();
       } catch (e) {
-        console.log("postMessage error:", e);
+        console.log("Firebase error:", e);
       }
+    })();
 
-      (async () => {
-        try {
-          await saveScoreToFirebase(finalScore, playerName);
-          await cleanupTop10();
-        } catch (e) {
-          console.log("Firebase error:", e);
-        }
-      })();
-
-      replayButton.style.display = "flex";
-    }
-  </script>
+    replayButton.style.display = "flex";
+  }
+</script>
 
 </body>
 </html>
