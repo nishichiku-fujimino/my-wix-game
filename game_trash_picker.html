@@ -27,6 +27,8 @@
     }
     #startScreen {
       background: #ffffff;
+      position: relative;
+      z-index: 10;
     }
     #replayButton {
       background: rgba(0,0,0,0.6);
@@ -35,6 +37,7 @@
       top: 0;
       left: 0;
       display: none;
+      z-index: 9999; /* ★ 常に最前面 */
     }
     #nameInput {
       font-size: 20px;
@@ -45,6 +48,8 @@
     #gameCanvas {
       display: none;
       background: #ffffff;
+      position: relative;
+      z-index: 1; /* ★ canvas は後ろ */
     }
   </style>
 
@@ -73,7 +78,6 @@
       });
     }
 
-    /* ★ Firestore を常に10件に保つ */
     async function cleanupTop10() {
       const snapshot = await db.collection("scores")
         .orderBy("score", "desc")
@@ -101,9 +105,8 @@
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
   <script>
-    const VERSION = "v1.0.8";
-
-    const GROUND_BOTTOM = 540;  // ★ 地面の底辺を540pxに統一
+    const VERSION = "v1.0.9";
+    const GROUND_BOTTOM = 540;
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -147,7 +150,7 @@
     function initGame() {
       player = { 
         x: 50, 
-        y: GROUND_BOTTOM - 40,  // ★ プレイヤー底辺540
+        y: GROUND_BOTTOM - 40,
         w: 40, 
         h: 40, 
         vy: 0, 
@@ -219,7 +222,7 @@
       const type = chooseWeightedGarbage();
       garbage.push({
         x: 360,
-        y: GROUND_BOTTOM - 30,  // ★ ゴミ底辺540
+        y: GROUND_BOTTOM - 30,
         w: 30,
         h: 30,
         color: type.color,
@@ -250,7 +253,6 @@
       const type = chooseEnemyType();
       const e = enemyTypes[type];
 
-      /* ★ ゴミと横方向で重ならないようにする（修正版） */
       const lastGarbage = garbage[garbage.length - 1];
       if (lastGarbage && lastGarbage.x > 360 - e.w) {
         return;
@@ -261,7 +263,7 @@
         x: 360,
         y: type === "flyer"
           ? e.flyHeight
-          : GROUND_BOTTOM - e.h,  // ★ 地上敵底辺540
+          : GROUND_BOTTOM - e.h,
         w: e.w,
         h: e.h,
         speed: e.speed,
@@ -327,7 +329,7 @@
           e.x -= e.speed;
         }
 
-        e.y = Math.round(e.y);  // ★ 敵の高さを整数化してズレを防ぐ
+        e.y = Math.round(e.y);
       });
 
       enemies = enemies.filter(e => e.x > -100);
@@ -421,16 +423,11 @@
       const finalScore = Math.floor(score);
       const playerName = nameInput.value.trim() || "名無し";
 
-      /* ★ Wix に最優先で通知（重要） */
       window.parent.postMessage({ type: "GAME_OVER" }, "*");
 
-      /* スコア保存 */
       await saveScoreToFirebase(finalScore, playerName);
-
-      /* トップ10維持 */
       await cleanupTop10();
 
-      /* ★ ゲームオーバー画面を表示 */
       replayButton.style.display = "flex";
     }
   </script>
