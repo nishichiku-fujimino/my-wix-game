@@ -337,28 +337,32 @@
 
   function updateEnemies() {
     enemies.forEach(e => {
+  
       if (e.type === "jumper") {
         if (Math.random() < 0.02) e.vy = e.jumpPower;
         e.vy += gravity;
         e.y += e.vy;
-
+  
         if (e.y > GROUND_BOTTOM - e.h) {
           e.y = GROUND_BOTTOM - e.h;
           e.vy = 0;
         }
-
+  
       } else if (e.type === "flyer") {
         updateFlyer(e);
-
+  
       } else {
         e.x -= e.speed;
       }
-
+  
       e.y = Math.round(e.y);
     });
-
-    enemies = enemies.filter(e => e.x > -100);
+  
+    // ★★★ ここが決定的修正 ★★★
+    // 画面外に出た敵を確実に削除する
+    enemies = enemies.filter(e => e.x + e.w > 0);
   }
+
 
   function isColliding(a, b) {
     return (
