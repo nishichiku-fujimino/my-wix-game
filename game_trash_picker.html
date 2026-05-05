@@ -365,10 +365,15 @@
       e.y = Math.round(e.y);
     });
   
-    // ★★★ ここが決定的修正 ★★★
-    // 画面外に出た敵を確実に削除する
-    enemies = enemies.filter(e => e.x + e.w > 0);
+    // ★★★ 決定的修正 ★★★
+    // x 方向だけでなく y 方向もチェックして削除
+    enemies = enemies.filter(e =>
+      e.x + e.w > 0 &&      // 画面左に消えていない
+      e.y + e.h > 0 &&      // 上に消えていない
+      e.y < 640             // 下に消えていない
+    );
   }
+
 
 
   function isColliding(a, b) {
