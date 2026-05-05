@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<html>
 <head>
   <meta charset="UTF-8" />
   <title>Trash Picker Game</title>
@@ -108,7 +107,7 @@
     let player, garbage, enemies, poops, score, gameOver, difficulty;
     const gravity = 0.6;
     let keys = {};
-    let jumpKeyPressed = false;  // ★ 押しっぱなし防止
+    let jumpKeyPressed = false;
 
     /* -------------------------
        ゴミ7種
@@ -141,7 +140,7 @@
         h: 40, 
         vy: 0, 
         onGround: true,
-        jumpCount: 0   // ★ 2段ジャンプ用
+        jumpCount: 0
       };
       garbage = [];
       enemies = [];
@@ -228,7 +227,7 @@
     }
 
     /* -------------------------
-       敵生成
+       敵生成（重要修正済み）
        ------------------------- */
     function chooseEnemyType() {
       if (difficulty <= 1) return "normal";
@@ -256,7 +255,7 @@
       enemies.push({
         type,
         x: 360,
-        y: type === "flyer" ? e.flyHeight : 520 - e.h,
+        y: type === "flyer" ? e.flyHeight : 500 - e.h,  // ★ 修正
         w: e.w,
         h: e.h,
         speed: e.speed,
@@ -306,22 +305,29 @@
       poops = poops.filter(p => p.y < 640);
     }
 
+    /* -------------------------
+       敵の更新（重要修正済み）
+       ------------------------- */
     function updateEnemies() {
       enemies.forEach(e => {
         if (e.type === "jumper") {
           if (Math.random() < 0.02) e.vy = e.jumpPower;
           e.vy += gravity;
           e.y += e.vy;
-          if (e.y > 520 - e.h) {
-            e.y = 520 - e.h;
+
+          if (e.y > 500 - e.h) {   // ★ 修正
+            e.y = 500 - e.h;
             e.vy = 0;
           }
+
         } else if (e.type === "flyer") {
           updateFlyer(e);
+
         } else {
           e.x -= e.speed;
         }
       });
+
       enemies = enemies.filter(e => e.x > -100);
     }
 
@@ -352,7 +358,7 @@
         player.y = 500;
         player.vy = 0;
         player.onGround = true;
-        player.jumpCount = 0;  // ★ 着地でリセット
+        player.jumpCount = 0;
       }
 
       garbage.forEach(g => g.x -= 4);
