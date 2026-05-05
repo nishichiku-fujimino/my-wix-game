@@ -435,19 +435,34 @@
       ctx.fillText("Trash Picker " + VERSION, 10, 60);
     }
 
-    async function endGame() {
-      gameOver = true;
-
-      //const finalScore = Math.floor(score);
-      //const playerName = nameInput.value.trim() || "名無し";
-
-      //window.parent.postMessage({ type: "GAME_OVER" }, "*");
-
-      //await saveScoreToFirebase(finalScore, playerName);
-      //await cleanupTop10();
-
-      replayButton.style.display = "flex";
+  async function endGame() {
+    if (gameOver) return;          // 多重呼び出し防止
+    gameOver = true;
+  
+    const finalScore = Math.floor(score);
+    const playerName = nameInput.value.trim() || "名無し";
+  
+    // Wix への通知（失敗しても UI は出す）
+    try {
+      window.parent.postMessage({ type: "GAME_OVER" }, "*");
+    } catch (e) {
+      console.log("postMessage error:", e);
     }
+  
+    // ★ ここがポイント：保存は「頑張る」けど、UI は必ず出す
+    (async () => {
+      try {
+        await saveScoreToFirebase(finalScore, playerName);
+        await cleanupTop10();
+      } catch (e) {
+        console.log("Firebase error:", e);
+      }
+    })();
+  
+    // ★ 保存の成否に関係なく、即リトライ画面を出す
+    replayButton.style.display = "flex";
+  }
+
   </script>
 
 </body>
