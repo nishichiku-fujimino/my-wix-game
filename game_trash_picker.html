@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<head>
+<<head>
   <meta charset="UTF-8" />
   <title>Trash Picker Game</title>
 
@@ -87,6 +87,8 @@
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
   <script>
+    const VERSION = "v1.0.0";  // ★ バージョン情報
+
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     const startScreen = document.getElementById("startScreen");
@@ -227,7 +229,7 @@
     }
 
     /* -------------------------
-       敵生成（重要修正済み）
+       敵生成（修正版）
        ------------------------- */
     function chooseEnemyType() {
       if (difficulty <= 1) return "normal";
@@ -306,7 +308,7 @@
     }
 
     /* -------------------------
-       敵の更新（重要修正済み）
+       敵の更新（修正版）
        ------------------------- */
     function updateEnemies() {
       enemies.forEach(e => {
@@ -389,7 +391,7 @@
     }
 
     /* -------------------------
-       描画
+       描画（バージョン表示追加）
        ------------------------- */
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -414,6 +416,10 @@
       ctx.font = "20px Arial";
       ctx.fillText("Score: " + Math.floor(score), 10, 30);
       ctx.fillText("Lv: " + difficulty, 280, 30);
+
+      // ★ バージョン情報
+      ctx.font = "14px Arial";
+      ctx.fillText("Trash Picker " + VERSION, 10, 60);
     }
 
     /* -------------------------
@@ -434,4 +440,5 @@
   </script>
 
 </body>
+
 </html>
