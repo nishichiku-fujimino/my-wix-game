@@ -87,7 +87,7 @@
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
   <script>
-    const VERSION = "v1.0.4";  // ★ バージョン情報
+    const VERSION = "v1.0.5";  // ★ バージョン情報
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -251,22 +251,19 @@
       if (gameOver) return;
       if (enemies.length >= 2) return;
 
-      // ★ ゴミと横方向で重ならないようにする
-      const lastGarbage = garbage[garbage.length - 1];
-      if (lastGarbage && lastGarbage.x > 280) {
-        // ゴミが右側にいる → 敵を出さない
-        return;
-      }
-
       const type = chooseEnemyType();
       const e = enemyTypes[type];
+
+      // ★ ゴミと横方向で絶対に重ならないようにする
+      const lastGarbage = garbage[garbage.length - 1];
+      if (lastGarbage && lastGarbage.x > 360 - e.w - 20) {
+        return; // ゴミが右側にいる → 敵を出さない
+      }
 
       enemies.push({
         type,
         x: 360,
-        y: type === "flyer"
-          ? e.flyHeight
-          : 500 - e.h,   // ★ 高さは地面に統一
+        y: type === "flyer" ? e.flyHeight : 500 - e.h,
         w: e.w,
         h: e.h,
         speed: e.speed,
