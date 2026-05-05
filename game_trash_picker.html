@@ -101,7 +101,7 @@
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
   <script>
-    const VERSION = "v1.0.6";
+    const VERSION = "v1.0.7";
 
     const GROUND_BOTTOM = 540;  // ★ 地面の底辺を540pxに統一
 
@@ -250,9 +250,9 @@
       const type = chooseEnemyType();
       const e = enemyTypes[type];
 
-      /* ★ ゴミと横方向で重ならないようにする */
+      /* ★ ゴミと横方向で重ならないようにする（修正版） */
       const lastGarbage = garbage[garbage.length - 1];
-      if (lastGarbage && lastGarbage.x > 360 - e.w - 20) {
+      if (lastGarbage && lastGarbage.x > 360 - e.w) {
         return;
       }
 
