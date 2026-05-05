@@ -121,7 +121,7 @@
   </div>
 
   <script>
-    const VERSION = "v1.1.4";
+    const VERSION = "v1.1.5";
     const GROUND_BOTTOM = 540;
 
     const canvas = document.getElementById("gameCanvas");
@@ -261,30 +261,36 @@
       return "flyer";
     }
 
-    /* ★★★ v1.1.4 修正：敵の同時出現数を 1 に変更 ★★★ */
+    /* ★★★ v1.1.5 修正：地上敵1体 + 空中敵1体 同時出現可能 ★★★ */
     function spawnEnemy() {
       if (gameOver) return;
 
-      // ★ Level4 以降で敵が出なくなる原因を解消
-      if (enemies.length >= 1) return;
+      // ★ 現在の敵数をタイプ別にカウント
+      const groundEnemies = enemies.filter(e => e.type !== "flyer").length;
+      const flyerEnemies  = enemies.filter(e => e.type === "flyer").length;
 
       const type = chooseEnemyType();
       const e = enemyTypes[type];
 
-      const lastGarbage = garbage[garbage.length - 1];
+      // ★ 地上敵は1体まで
+      if (type !== "flyer" && groundEnemies >= 1) return;
 
+      // ★ 空中敵は1体まで
+      if (type === "flyer" && flyerEnemies >= 1) return;
+
+      // ★ ゴミとの重なりチェック（地上敵のみ）
+      const lastGarbage = garbage[garbage.length - 1];
       if (type !== "flyer") {
         if (lastGarbage && lastGarbage.x > 360 - e.w) {
           return;
         }
       }
 
+      // ★ 敵を追加
       enemies.push({
         type,
         x: 360,
-        y: type === "flyer"
-          ? e.flyHeight
-          : GROUND_BOTTOM - e.h,
+        y: type === "flyer" ? e.flyHeight : GROUND_BOTTOM - e.h,
         w: e.w,
         h: e.h,
         speed: e.speed,
