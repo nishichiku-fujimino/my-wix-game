@@ -101,7 +101,9 @@
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
   <script>
-    const VERSION = "v1.0.5";
+    const VERSION = "v1.0.6";
+
+    const GROUND_BOTTOM = 540;  // ★ 地面の底辺を540pxに統一
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -145,7 +147,7 @@
     function initGame() {
       player = { 
         x: 50, 
-        y: 500, 
+        y: GROUND_BOTTOM - 40,  // ★ プレイヤー底辺540
         w: 40, 
         h: 40, 
         vy: 0, 
@@ -217,7 +219,7 @@
       const type = chooseWeightedGarbage();
       garbage.push({
         x: 360,
-        y: 500,
+        y: GROUND_BOTTOM - 30,  // ★ ゴミ底辺540
         w: 30,
         h: 30,
         color: type.color,
@@ -248,7 +250,7 @@
       const type = chooseEnemyType();
       const e = enemyTypes[type];
 
-      /* ★ ゴミと横方向で絶対に重ならないようにする */
+      /* ★ ゴミと横方向で重ならないようにする */
       const lastGarbage = garbage[garbage.length - 1];
       if (lastGarbage && lastGarbage.x > 360 - e.w - 20) {
         return;
@@ -257,7 +259,9 @@
       enemies.push({
         type,
         x: 360,
-        y: type === "flyer" ? e.flyHeight : 500 - e.h,
+        y: type === "flyer"
+          ? e.flyHeight
+          : GROUND_BOTTOM - e.h,  // ★ 地上敵底辺540
         w: e.w,
         h: e.h,
         speed: e.speed,
@@ -311,8 +315,8 @@
           e.vy += gravity;
           e.y += e.vy;
 
-          if (e.y > 500 - e.h) {
-            e.y = 500 - e.h;
+          if (e.y > GROUND_BOTTOM - e.h) {
+            e.y = GROUND_BOTTOM - e.h;
             e.vy = 0;
           }
 
@@ -347,8 +351,8 @@
       player.vy += gravity;
       player.y += player.vy;
 
-      if (player.y >= 500) {
-        player.y = 500;
+      if (player.y >= GROUND_BOTTOM - player.h) {
+        player.y = GROUND_BOTTOM - player.h;
         player.vy = 0;
         player.onGround = true;
         player.jumpCount = 0;
