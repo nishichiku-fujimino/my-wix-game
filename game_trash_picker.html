@@ -123,17 +123,25 @@
     ];
 
     /* -------------------------
-       敵4種（tall の高さ1.5倍・速度遅め）
+       敵4種
        ------------------------- */
     const enemyTypes = {
       normal: { w: 40, h: 40, speed: 6 },
-      tall:   { w: 40, h: 60, speed: 4 },   // ← 高さ60px・速度4に調整
+      tall:   { w: 40, h: 60, speed: 4 },
       jumper: { w: 40, h: 40, speed: 6, jumpPower: -10 },
       flyer:  { w: 40, h: 40, speed: 4, flyHeight: 250 }
     };
 
     function initGame() {
-      player = { x: 50, y: 500, w: 40, h: 40, vy: 0, onGround: true };
+      player = { 
+        x: 50, 
+        y: 500, 
+        w: 40, 
+        h: 40, 
+        vy: 0, 
+        onGround: true,
+        jumpCount: 0   // ★ 2段ジャンプ用
+      };
       garbage = [];
       enemies = [];
       poops = [];
@@ -153,7 +161,7 @@
     document.addEventListener("keyup", (e) => keys[e.key] = false);
 
     /* -------------------------
-       難易度基準（10倍版）
+       難易度
        ------------------------- */
     function updateDifficulty() {
       if (score > 6000) difficulty = 7;
@@ -166,15 +174,12 @@
     }
 
     /* -------------------------
-       ゴミ：難易度で種類制限
+       ゴミ生成
        ------------------------- */
     function getAvailableGarbageTypes() {
       return garbageTypes.slice(0, difficulty);
     }
 
-    /* -------------------------
-       ゴミ：重み付きランダム
-       ------------------------- */
     function chooseWeightedGarbage() {
       const available = getAvailableGarbageTypes();
       const totalWeight = available.reduce((sum, g) => sum + g.weight, 0);
@@ -201,22 +206,17 @@
     }
 
     /* -------------------------
-       敵：難易度で種類制限＋確率調整
+       敵生成
        ------------------------- */
     function chooseEnemyType() {
-      if (difficulty <= 1) {
-        return "normal";
-      }
-      if (difficulty <= 3) {
-        return Math.random() < 0.7 ? "normal" : "tall";
-      }
+      if (difficulty <= 1) return "normal";
+      if (difficulty <= 3) return Math.random() < 0.7 ? "normal" : "tall";
       if (difficulty == 4) {
         const r = Math.random();
         if (r < 0.5) return "normal";
         if (r < 0.8) return "tall";
         return "jumper";
       }
-      // Lv5〜7
       const r = Math.random();
       if (r < 0.4) return "normal";
       if (r < 0.7) return "tall";
@@ -226,8 +226,6 @@
 
     function spawnEnemy() {
       if (gameOver) return;
-
-      // ★ 敵は最大2体まで
       if (enemies.length >= 2) return;
 
       const type = chooseEnemyType();
@@ -246,9 +244,6 @@
       });
     }
 
-    /* -------------------------
-       出現頻度（難易度で加速）
-       ------------------------- */
     function getEnemySpawnInterval() {
       return Math.max(600, 2000 - (difficulty - 1) * 200);
     }
@@ -267,7 +262,7 @@
     }
 
     /* -------------------------
-       空中敵のウンチ落下
+       空中敵のウンチ
        ------------------------- */
     function updateFlyer(enemy) {
       enemy.x -= enemy.speed;
@@ -318,7 +313,7 @@
     }
 
     /* -------------------------
-       メインループ
+       ★ 2段ジャンプ対応メインループ
        ------------------------- */
     function update() {
       if (gameOver) return;
@@ -328,18 +323,32 @@
       if (keys["ArrowLeft"]) player.x -= 4;
       if (keys["ArrowRight"]) player.x += 4;
 
-      if (keys[" "] && player.onGround) {
-        player.vy = -12;
-        player.onGround = false;
+      /* -------------------------
+         ★ 2段ジャンプ処理
+         ------------------------- */
+      if (keys[" "]) {
+        if (player.jumpCount < 2) {
+          if (player.jumpCount === 0) {
+            player.vy = -12;   // 1段目：強い
+          } else {
+            player.vy = -10;   // 2段目：弱い
+          }
+          player.onGround = false;
+          player.jumpCount++;
+        }
       }
 
       player.vy += gravity;
       player.y += player.vy;
 
+      /* -------------------------
+         ★ 着地したらジャンプ回数リセット
+         ------------------------- */
       if (player.y > 500) {
         player.y = 500;
         player.vy = 0;
         player.onGround = true;
+        player.jumpCount = 0;
       }
 
       garbage.forEach(g => g.x -= 4);
@@ -415,4 +424,5 @@
   </script>
 
 </body>
+
 </html>
