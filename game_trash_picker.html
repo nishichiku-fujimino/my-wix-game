@@ -43,7 +43,7 @@
       z-index: 10;
     }
 
-    /* ★ ここが重要：canvas と同じ container 内で絶対位置 */
+    /* ★ リトライ画面は canvas と同じ container 内に配置 */
     #replayButton {
       background: rgba(0,0,0,0.6);
       color: #fff;
@@ -109,7 +109,6 @@
 
 <body>
 
-  <!-- ★★★ 重要：canvas と replayButton を同じ container に入れる ★★★ -->
   <div id="gameContainer">
 
     <div id="startScreen">
@@ -124,7 +123,7 @@
   </div>
 
   <script>
-    const VERSION = "v1.1.1";
+    const VERSION = "v1.1.2";
     const GROUND_BOTTOM = 540;
 
     const canvas = document.getElementById("gameCanvas");
@@ -435,34 +434,34 @@
       ctx.fillText("Trash Picker " + VERSION, 10, 60);
     }
 
-  async function endGame() {
-    if (gameOver) return;          // 多重呼び出し防止
-    gameOver = true;
-  
-    const finalScore = Math.floor(score);
-    const playerName = nameInput.value.trim() || "名無し";
-  
-    // Wix への通知（失敗しても UI は出す）
-    try {
-      window.parent.postMessage({ type: "GAME_OVER" }, "*");
-    } catch (e) {
-      console.log("postMessage error:", e);
-    }
-  
-    // ★ ここがポイント：保存は「頑張る」けど、UI は必ず出す
-    (async () => {
-      try {
-        await saveScoreToFirebase(finalScore, playerName);
-        await cleanupTop10();
-      } catch (e) {
-        console.log("Firebase error:", e);
-      }
-    })();
-  
-    // ★ 保存の成否に関係なく、即リトライ画面を出す
-    replayButton.style.display = "flex";
-  }
+    /* ★★★ v1.1.2 の最重要修正 endGame() ★★★ */
+    async function endGame() {
+      if (gameOver) return;
+      gameOver = true;
 
+      const finalScore = Math.floor(score);
+      const playerName = nameInput.value.trim() || "名無し";
+
+      /* ★ Wix に最優先で通知（UI を止めない） */
+      try {
+        window.parent.postMessage({ type: "GAME_OVER" }, "*");
+      } catch (e) {
+        console.log("postMessage error:", e);
+      }
+
+      /* ★ Firestore 保存はバックグラウンドで実行（UI を止めない） */
+      (async () => {
+        try {
+          await saveScoreToFirebase(finalScore, playerName);
+          await cleanupTop10();
+        } catch (e) {
+          console.log("Firebase error:", e);
+        }
+      })();
+
+      /* ★ UI は必ず表示（ここが最重要） */
+      replayButton.style.display = "flex";
+    }
   </script>
 
 </body>
