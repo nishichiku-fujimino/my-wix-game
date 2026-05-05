@@ -13,7 +13,6 @@
       font-family: Arial, sans-serif;
     }
 
-    /* ★ ゲーム全体を包むコンテナ（基準点を統一） */
     #gameContainer {
       position: relative;
       width: 360px;
@@ -43,7 +42,6 @@
       z-index: 10;
     }
 
-    /* ★ リトライ画面は canvas と同じ container 内に配置 */
     #replayButton {
       background: rgba(0,0,0,0.6);
       color: #fff;
@@ -123,7 +121,7 @@
   </div>
 
   <script>
-    const VERSION = "v1.1.2";
+    const VERSION = "v1.1.3";
     const GROUND_BOTTOM = 540;
 
     const canvas = document.getElementById("gameCanvas");
@@ -263,6 +261,7 @@
       return "flyer";
     }
 
+    /* ★★★ v1.1.3 修正：flyer は重なりチェックをスキップ ★★★ */
     function spawnEnemy() {
       if (gameOver) return;
       if (enemies.length >= 2) return;
@@ -271,8 +270,12 @@
       const e = enemyTypes[type];
 
       const lastGarbage = garbage[garbage.length - 1];
-      if (lastGarbage && lastGarbage.x > 360 - e.w) {
-        return;
+
+      // ★ flyer はゴミと重なっても問題ないのでスキップ
+      if (type !== "flyer") {
+        if (lastGarbage && lastGarbage.x > 360 - e.w) {
+          return;
+        }
       }
 
       enemies.push({
@@ -434,7 +437,6 @@
       ctx.fillText("Trash Picker " + VERSION, 10, 60);
     }
 
-    /* ★★★ v1.1.2 の最重要修正 endGame() ★★★ */
     async function endGame() {
       if (gameOver) return;
       gameOver = true;
@@ -442,14 +444,12 @@
       const finalScore = Math.floor(score);
       const playerName = nameInput.value.trim() || "名無し";
 
-      /* ★ Wix に最優先で通知（UI を止めない） */
       try {
         window.parent.postMessage({ type: "GAME_OVER" }, "*");
       } catch (e) {
         console.log("postMessage error:", e);
       }
 
-      /* ★ Firestore 保存はバックグラウンドで実行（UI を止めない） */
       (async () => {
         try {
           await saveScoreToFirebase(finalScore, playerName);
@@ -459,7 +459,6 @@
         }
       })();
 
-      /* ★ UI は必ず表示（ここが最重要） */
       replayButton.style.display = "flex";
     }
   </script>
