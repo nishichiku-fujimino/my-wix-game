@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<<head>
+<head>
   <meta charset="UTF-8" />
   <title>Trash Picker Game</title>
 
@@ -87,7 +87,7 @@
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
   <script>
-    const VERSION = "v1.0.0";  // ★ バージョン情報
+    const VERSION = "v1.0.3";  // ★ バージョン情報
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -197,7 +197,7 @@
     }
 
     /* -------------------------
-       ゴミ生成
+       ゴミ生成（500px に統一）
        ------------------------- */
     function getAvailableGarbageTypes() {
       return garbageTypes.slice(0, difficulty);
@@ -220,7 +220,7 @@
       const type = chooseWeightedGarbage();
       garbage.push({
         x: 360,
-        y: 520,
+        y: 500,   // ★ 統一
         w: 30,
         h: 30,
         color: type.color,
@@ -229,7 +229,7 @@
     }
 
     /* -------------------------
-       敵生成（修正版）
+       敵生成（完全修正版）
        ------------------------- */
     function chooseEnemyType() {
       if (difficulty <= 1) return "normal";
@@ -257,7 +257,9 @@
       enemies.push({
         type,
         x: 360,
-        y: type === "flyer" ? e.flyHeight : 500 - e.h,  // ★ 修正
+        y: type === "flyer"
+          ? e.flyHeight
+          : 500 - e.h - 40,   // ★ ゴミと絶対に重ならない安全距離
         w: e.w,
         h: e.h,
         speed: e.speed,
@@ -308,7 +310,7 @@
     }
 
     /* -------------------------
-       敵の更新（修正版）
+       敵の更新（完全修正版）
        ------------------------- */
     function updateEnemies() {
       enemies.forEach(e => {
@@ -317,8 +319,8 @@
           e.vy += gravity;
           e.y += e.vy;
 
-          if (e.y > 500 - e.h) {   // ★ 修正
-            e.y = 500 - e.h;
+          if (e.y > 500 - e.h - 40) {   // ★ 安全距離に合わせて修正
+            e.y = 500 - e.h - 40;
             e.vy = 0;
           }
 
@@ -356,7 +358,7 @@
       player.vy += gravity;
       player.y += player.vy;
 
-      if (player.y > 500) {
+      if (player.y >= 500) {
         player.y = 500;
         player.vy = 0;
         player.onGround = true;
@@ -391,7 +393,7 @@
     }
 
     /* -------------------------
-       描画（バージョン表示追加）
+       描画（バージョン表示付き）
        ------------------------- */
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -440,5 +442,4 @@
   </script>
 
 </body>
-
 </html>
