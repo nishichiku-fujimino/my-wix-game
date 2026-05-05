@@ -87,7 +87,7 @@
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
   <script>
-    const VERSION = "v1.0.3";  // ★ バージョン情報
+    const VERSION = "v1.0.4";  // ★ バージョン情報
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -197,7 +197,7 @@
     }
 
     /* -------------------------
-       ゴミ生成（500px に統一）
+       ゴミ生成（500px）
        ------------------------- */
     function getAvailableGarbageTypes() {
       return garbageTypes.slice(0, difficulty);
@@ -220,7 +220,7 @@
       const type = chooseWeightedGarbage();
       garbage.push({
         x: 360,
-        y: 500,   // ★ 統一
+        y: 500,
         w: 30,
         h: 30,
         color: type.color,
@@ -229,7 +229,7 @@
     }
 
     /* -------------------------
-       敵生成（完全修正版）
+       敵生成（横方向で絶対に重ならない）
        ------------------------- */
     function chooseEnemyType() {
       if (difficulty <= 1) return "normal";
@@ -251,6 +251,13 @@
       if (gameOver) return;
       if (enemies.length >= 2) return;
 
+      // ★ ゴミと横方向で重ならないようにする
+      const lastGarbage = garbage[garbage.length - 1];
+      if (lastGarbage && lastGarbage.x > 280) {
+        // ゴミが右側にいる → 敵を出さない
+        return;
+      }
+
       const type = chooseEnemyType();
       const e = enemyTypes[type];
 
@@ -259,7 +266,7 @@
         x: 360,
         y: type === "flyer"
           ? e.flyHeight
-          : 500 - e.h - 40,   // ★ ゴミと絶対に重ならない安全距離
+          : 500 - e.h,   // ★ 高さは地面に統一
         w: e.w,
         h: e.h,
         speed: e.speed,
@@ -310,7 +317,7 @@
     }
 
     /* -------------------------
-       敵の更新（完全修正版）
+       敵の更新
        ------------------------- */
     function updateEnemies() {
       enemies.forEach(e => {
@@ -319,8 +326,8 @@
           e.vy += gravity;
           e.y += e.vy;
 
-          if (e.y > 500 - e.h - 40) {   // ★ 安全距離に合わせて修正
-            e.y = 500 - e.h - 40;
+          if (e.y > 500 - e.h) {
+            e.y = 500 - e.h;
             e.vy = 0;
           }
 
