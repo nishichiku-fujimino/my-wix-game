@@ -13,6 +13,14 @@
       font-family: Arial, sans-serif;
     }
 
+    /* ★ ゲーム全体を包むコンテナ（基準点を統一） */
+    #gameContainer {
+      position: relative;
+      width: 360px;
+      height: 640px;
+      margin: 0 auto;
+    }
+
     #startScreen, #replayButton {
       width: 360px;
       height: 640px;
@@ -25,20 +33,20 @@
       user-select: none;
       flex-direction: column;
       gap: 20px;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
 
     #startScreen {
       background: #ffffff;
-      position: relative;
       z-index: 10;
     }
 
-    /* ★★★ ここが v1.1.0 の最重要修正 ★★★ */
+    /* ★ ここが重要：canvas と同じ container 内で絶対位置 */
     #replayButton {
       background: rgba(0,0,0,0.6);
       color: #fff;
-      position: absolute;
-      inset: 0;        /* ← これで確実に canvas の上に重なる */
       display: none;
       z-index: 9999;
     }
@@ -51,9 +59,10 @@
     }
 
     #gameCanvas {
-      display: none;
       background: #ffffff;
-      position: relative;
+      position: absolute;
+      top: 0;
+      left: 0;
       z-index: 1;
     }
   </style>
@@ -100,17 +109,22 @@
 
 <body>
 
-  <div id="startScreen">
-    ▶ PLAY
-    <input id="nameInput" placeholder="名前を入力（任意）" />
+  <!-- ★★★ 重要：canvas と replayButton を同じ container に入れる ★★★ -->
+  <div id="gameContainer">
+
+    <div id="startScreen">
+      ▶ PLAY
+      <input id="nameInput" placeholder="名前を入力（任意）" />
+    </div>
+
+    <canvas id="gameCanvas" width="360" height="640"></canvas>
+
+    <div id="replayButton">↻ REPLAY</div>
+
   </div>
 
-  <div id="replayButton">↻ REPLAY</div>
-
-  <canvas id="gameCanvas" width="360" height="640"></canvas>
-
   <script>
-    const VERSION = "v1.1.0";
+    const VERSION = "v1.1.1";
     const GROUND_BOTTOM = 540;
 
     const canvas = document.getElementById("gameCanvas");
@@ -121,7 +135,6 @@
 
     startScreen.addEventListener("click", () => {
       startScreen.style.display = "none";
-      canvas.style.display = "block";
       startGame();
     });
 
