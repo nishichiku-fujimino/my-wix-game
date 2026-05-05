@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<html>
 <head>
   <meta charset="UTF-8" />
   <title>Trash Picker Game</title>
@@ -71,6 +72,19 @@
         date: new Date()
       });
     }
+
+    /* ★ Firestore を常に10件に保つ */
+    async function cleanupTop10() {
+      const snapshot = await db.collection("scores")
+        .orderBy("score", "desc")
+        .orderBy("name", "asc")
+        .get();
+
+      const docs = snapshot.docs;
+      for (let i = 10; i < docs.length; i++) {
+        await db.collection("scores").doc(docs[i].id).delete();
+      }
+    }
   </script>
 
 </head>
@@ -87,7 +101,7 @@
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
   <script>
-    const VERSION = "v1.0.5";  // ★ バージョン情報
+    const VERSION = "v1.0.5";
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -111,9 +125,6 @@
     let keys = {};
     let jumpKeyPressed = false;
 
-    /* -------------------------
-       ゴミ7種
-       ------------------------- */
     const garbageTypes = [
       { color: "green",  score: 10,  weight: 40 },
       { color: "yellow", score: 20,  weight: 25 },
@@ -124,9 +135,6 @@
       { color: "gold",   score: 720, weight: 1  }
     ];
 
-    /* -------------------------
-       敵4種
-       ------------------------- */
     const enemyTypes = {
       normal: { w: 40, h: 40, speed: 6 },
       tall:   { w: 40, h: 60, speed: 4 },
@@ -159,16 +167,11 @@
       scheduleGarbageSpawn();
     }
 
-    /* -------------------------
-       キー入力
-       ------------------------- */
     document.addEventListener("keydown", (e) => {
       if (e.key === " ") {
         if (!jumpKeyPressed) {
           if (player.jumpCount < 2) {
-            if (player.jumpCount === 0) player.vy = -12;
-            else player.vy = -10;
-
+            player.vy = player.jumpCount === 0 ? -12 : -10;
             player.onGround = false;
             player.jumpCount++;
           }
@@ -183,9 +186,6 @@
       keys[e.key] = false;
     });
 
-    /* -------------------------
-       難易度
-       ------------------------- */
     function updateDifficulty() {
       if (score > 6000) difficulty = 7;
       else if (score > 4000) difficulty = 6;
@@ -196,9 +196,6 @@
       else difficulty = 1;
     }
 
-    /* -------------------------
-       ゴミ生成（500px）
-       ------------------------- */
     function getAvailableGarbageTypes() {
       return garbageTypes.slice(0, difficulty);
     }
@@ -228,9 +225,6 @@
       });
     }
 
-    /* -------------------------
-       敵生成（横方向で絶対に重ならない）
-       ------------------------- */
     function chooseEnemyType() {
       if (difficulty <= 1) return "normal";
       if (difficulty <= 3) return Math.random() < 0.7 ? "normal" : "tall";
@@ -254,10 +248,10 @@
       const type = chooseEnemyType();
       const e = enemyTypes[type];
 
-      // ★ ゴミと横方向で絶対に重ならないようにする
+      /* ★ ゴミと横方向で絶対に重ならないようにする */
       const lastGarbage = garbage[garbage.length - 1];
       if (lastGarbage && lastGarbage.x > 360 - e.w - 20) {
-        return; // ゴミが右側にいる → 敵を出さない
+        return;
       }
 
       enemies.push({
@@ -290,9 +284,6 @@
       setTimeout(scheduleGarbageSpawn, interval);
     }
 
-    /* -------------------------
-       空中敵のウンチ
-       ------------------------- */
     function updateFlyer(enemy) {
       enemy.x -= enemy.speed;
       enemy.poopTimer++;
@@ -313,9 +304,6 @@
       poops = poops.filter(p => p.y < 640);
     }
 
-    /* -------------------------
-       敵の更新
-       ------------------------- */
     function updateEnemies() {
       enemies.forEach(e => {
         if (e.type === "jumper") {
@@ -348,9 +336,6 @@
       );
     }
 
-    /* -------------------------
-       メインループ
-       ------------------------- */
     function update() {
       if (gameOver) return;
 
@@ -396,9 +381,6 @@
       requestAnimationFrame(update);
     }
 
-    /* -------------------------
-       描画（バージョン表示付き）
-       ------------------------- */
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -423,14 +405,10 @@
       ctx.fillText("Score: " + Math.floor(score), 10, 30);
       ctx.fillText("Lv: " + difficulty, 280, 30);
 
-      // ★ バージョン情報
       ctx.font = "14px Arial";
       ctx.fillText("Trash Picker " + VERSION, 10, 60);
     }
 
-    /* -------------------------
-       ゲームオーバー
-       ------------------------- */
     async function endGame() {
       gameOver = true;
 
@@ -438,6 +416,9 @@
       const playerName = nameInput.value.trim() || "名無し";
 
       await saveScoreToFirebase(finalScore, playerName);
+
+      /* ★ Firestore を常に10件に保つ */
+      await cleanupTop10();
 
       window.parent.postMessage({ type: "GAME_OVER" }, "*");
 
