@@ -2,49 +2,70 @@
 <html>
 <head>
   <meta charset="UTF-8" />
-  <title>Trash Picker Game</title>
+  <title>Ranking</title>
 
   <style>
     body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #f0f0f0;
       font-family: Arial, sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 20px;
     }
-    #startScreen, #replayButton {
-      width: 360px;
-      height: 640px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 32px;
-      font-weight: bold;
-      cursor: pointer;
-      user-select: none;
-      flex-direction: column;
-      gap: 20px;
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
     }
-    #startScreen {
-      background: #ffffff;
+
+    #rankingTable {
+      width: 100%;
+      max-width: 450px;
+      margin: 0 auto;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
     }
-    #replayButton {
-      background: rgba(0,0,0,0.6);
-      color: #fff;
-      position: absolute;
-      top: 0;
-      left: 0;
-      display: none;
-    }
-    #nameInput {
-      font-size: 20px;
-      padding: 10px;
-      width: 250px;
+
+    #rankingTable th, #rankingTable td {
+      padding: 12px;
+      border-bottom: 1px solid #ddd;
       text-align: center;
     }
-    #gameCanvas {
-      display: none;
-      background: #ffffff;
+
+    #rankingTable th {
+      background: #333;
+      color: #fff;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    #loading {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 18px;
+    }
+
+    .deleteBtn {
+      background: #d9534f;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .deleteBtn:hover {
+      background: #c9302c;
+    }
+
+    #adminKeyInput {
+      width: 200px;
+      padding: 8px;
+      margin-bottom: 10px;
+      text-align: center;
     }
   </style>
 
@@ -65,370 +86,131 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    async function saveScoreToFirebase(score, name) {
-      await db.collection("scores").add({
-        name: name,
-        score: score,
-        date: new Date()
-      });
-    }
+    let adminMode = false;
 
-    /* ★ Firestore を常に10件に保つ */
-    async function cleanupTop10() {
-      const snapshot = await db.collection("scores")
-        .orderBy("score", "desc")
-        .orderBy("name", "asc")
-        .get();
+    function toggleAdminMode() {
+      const keyInput = document.getElementById("adminKeyInput");
+      const btn = document.getElementById("adminToggleBtn");
 
-      const docs = snapshot.docs;
-      for (let i = 10; i < docs.length; i++) {
-        await db.collection("scores").doc(docs[i].id).delete();
+      if (!adminMode) {
+        if (keyInput.value === "fujimino2025") {
+          adminMode = true;
+          btn.textContent = "管理者モード OFF";
+          loadRanking();
+        } else {
+          alert("管理者キーが違います");
+        }
+        return;
       }
+
+      adminMode = false;
+      btn.textContent = "管理者モード ON";
+      loadRanking();
     }
+
+    function loadRanking() {
+      const tableBody = document.getElementById("rankingBody");
+      const loading = document.getElementById("loading");
+
+      loading.textContent = "読み込み中…";
+
+      db.collection("scores")
+        .orderBy("score", "desc")
+        .limit(50)  // 一旦多めに取得
+        .onSnapshot((snapshot) => {
+          tableBody.innerHTML = "";
+          loading.style.display = "none";
+
+          let items = [];
+
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            items.push({
+              id: doc.id,
+              name: data.name || "",
+              score: data.score,
+              date: data.date ? data.date.toDate() : null
+            });
+          });
+
+          /* ★ 健さん仕様の並び替えロジック */
+          items.sort((a, b) => {
+            // ① スコア降順
+            if (b.score !== a.score) return b.score - a.score;
+
+            // ② 空欄の名前は最後へ
+            if (a.name.trim() === "" && b.name.trim() !== "") return 1;
+            if (b.name.trim() === "" && a.name.trim() !== "") return -1;
+
+            // ③ 大文字小文字を無視して名前昇順
+            return a.name.toLowerCase().localeCompare(b.name.toLowerCase(), "ja");
+          });
+
+          // ★ トップ10だけに絞る
+          items = items.slice(0, 10);
+
+          // ★ 表示
+          let rank = 1;
+          items.forEach(item => {
+            const dateStr = item.date
+              ? item.date.toLocaleString("ja-JP")
+              : "-";
+
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+              <td>${rank}</td>
+              <td>${item.name}</td>
+              <td>${item.score}</td>
+              <td>${dateStr}</td>
+              <td>
+                ${adminMode ? `<button class="deleteBtn" onclick="deleteScore('${item.id}')">削除</button>` : ""}
+              </td>
+            `;
+
+            tableBody.appendChild(row);
+            rank++;
+          });
+
+          if (rank === 1) {
+            loading.textContent = "まだスコアがありません。";
+            loading.style.display = "block";
+          }
+        });
+    }
+
+    async function deleteScore(id) {
+      await db.collection("scores").doc(id).delete();
+    }
+
+    window.onload = loadRanking;
   </script>
 
 </head>
 
 <body>
 
-  <div id="startScreen">
-    ▶ PLAY
-    <input id="nameInput" placeholder="名前を入力（任意）" />
+  <h1>ランキング</h1>
+
+  <div style="text-align:center; margin-bottom:15px;">
+    <input id="adminKeyInput" placeholder="管理者キー" />
+    <button id="adminToggleBtn" onclick="toggleAdminMode()">管理者モード ON</button>
   </div>
 
-  <div id="replayButton">↻ REPLAY</div>
+  <table id="rankingTable">
+    <thead>
+      <tr>
+        <th>順位</th>
+        <th>名前</th>
+        <th>スコア</th>
+        <th>日付</th>
+        <th>管理</th>
+      </tr>
+    </thead>
+    <tbody id="rankingBody"></tbody>
+  </table>
 
-  <canvas id="gameCanvas" width="360" height="640"></canvas>
-
-  <script>
-    const VERSION = "v1.0.6";
-
-    const GROUND_BOTTOM = 540;  // ★ 地面の底辺を540pxに統一
-
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    const startScreen = document.getElementById("startScreen");
-    const replayButton = document.getElementById("replayButton");
-    const nameInput = document.getElementById("nameInput");
-
-    startScreen.addEventListener("click", () => {
-      startScreen.style.display = "none";
-      canvas.style.display = "block";
-      startGame();
-    });
-
-    replayButton.addEventListener("click", () => {
-      replayButton.style.display = "none";
-      startGame();
-    });
-
-    let player, garbage, enemies, poops, score, gameOver, difficulty;
-    const gravity = 0.6;
-    let keys = {};
-    let jumpKeyPressed = false;
-
-    const garbageTypes = [
-      { color: "green",  score: 10,  weight: 40 },
-      { color: "yellow", score: 20,  weight: 25 },
-      { color: "orange", score: 40,  weight: 15 },
-      { color: "red",    score: 80,  weight: 10 },
-      { color: "purple", score: 160, weight: 6  },
-      { color: "blue",   score: 320, weight: 3  },
-      { color: "gold",   score: 720, weight: 1  }
-    ];
-
-    const enemyTypes = {
-      normal: { w: 40, h: 40, speed: 6 },
-      tall:   { w: 40, h: 60, speed: 4 },
-      jumper: { w: 40, h: 40, speed: 6, jumpPower: -10 },
-      flyer:  { w: 40, h: 40, speed: 4, flyHeight: 250 }
-    };
-
-    function initGame() {
-      player = { 
-        x: 50, 
-        y: GROUND_BOTTOM - 40,  // ★ プレイヤー底辺540
-        w: 40, 
-        h: 40, 
-        vy: 0, 
-        onGround: true,
-        jumpCount: 0
-      };
-      garbage = [];
-      enemies = [];
-      poops = [];
-      score = 0;
-      gameOver = false;
-      difficulty = 1;
-    }
-
-    function startGame() {
-      initGame();
-      update();
-      scheduleEnemySpawn();
-      scheduleGarbageSpawn();
-    }
-
-    document.addEventListener("keydown", (e) => {
-      if (e.key === " ") {
-        if (!jumpKeyPressed) {
-          if (player.jumpCount < 2) {
-            player.vy = player.jumpCount === 0 ? -12 : -10;
-            player.onGround = false;
-            player.jumpCount++;
-          }
-        }
-        jumpKeyPressed = true;
-      }
-      keys[e.key] = true;
-    });
-
-    document.addEventListener("keyup", (e) => {
-      if (e.key === " ") jumpKeyPressed = false;
-      keys[e.key] = false;
-    });
-
-    function updateDifficulty() {
-      if (score > 6000) difficulty = 7;
-      else if (score > 4000) difficulty = 6;
-      else if (score > 2500) difficulty = 5;
-      else if (score > 1500) difficulty = 4;
-      else if (score > 800) difficulty = 3;
-      else if (score > 300) difficulty = 2;
-      else difficulty = 1;
-    }
-
-    function getAvailableGarbageTypes() {
-      return garbageTypes.slice(0, difficulty);
-    }
-
-    function chooseWeightedGarbage() {
-      const available = getAvailableGarbageTypes();
-      const totalWeight = available.reduce((sum, g) => sum + g.weight, 0);
-      let r = Math.random() * totalWeight;
-
-      for (const g of available) {
-        if (r < g.weight) return g;
-        r -= g.weight;
-      }
-      return available[0];
-    }
-
-    function spawnGarbage() {
-      if (gameOver) return;
-      const type = chooseWeightedGarbage();
-      garbage.push({
-        x: 360,
-        y: GROUND_BOTTOM - 30,  // ★ ゴミ底辺540
-        w: 30,
-        h: 30,
-        color: type.color,
-        score: type.score
-      });
-    }
-
-    function chooseEnemyType() {
-      if (difficulty <= 1) return "normal";
-      if (difficulty <= 3) return Math.random() < 0.7 ? "normal" : "tall";
-      if (difficulty == 4) {
-        const r = Math.random();
-        if (r < 0.5) return "normal";
-        if (r < 0.8) return "tall";
-        return "jumper";
-      }
-      const r = Math.random();
-      if (r < 0.4) return "normal";
-      if (r < 0.7) return "tall";
-      if (r < 0.9) return "jumper";
-      return "flyer";
-    }
-
-    function spawnEnemy() {
-      if (gameOver) return;
-      if (enemies.length >= 2) return;
-
-      const type = chooseEnemyType();
-      const e = enemyTypes[type];
-
-      /* ★ ゴミと横方向で重ならないようにする */
-      const lastGarbage = garbage[garbage.length - 1];
-      if (lastGarbage && lastGarbage.x > 360 - e.w - 20) {
-        return;
-      }
-
-      enemies.push({
-        type,
-        x: 360,
-        y: type === "flyer"
-          ? e.flyHeight
-          : GROUND_BOTTOM - e.h,  // ★ 地上敵底辺540
-        w: e.w,
-        h: e.h,
-        speed: e.speed,
-        vy: 0,
-        jumpPower: e.jumpPower || 0,
-        poopTimer: 0
-      });
-    }
-
-    function getEnemySpawnInterval() {
-      return Math.max(600, 2000 - (difficulty - 1) * 200);
-    }
-
-    function scheduleEnemySpawn() {
-      if (gameOver) return;
-      spawnEnemy();
-      setTimeout(scheduleEnemySpawn, getEnemySpawnInterval());
-    }
-
-    function scheduleGarbageSpawn() {
-      if (gameOver) return;
-      spawnGarbage();
-      const interval = Math.max(400, 1500 - (difficulty - 1) * 120);
-      setTimeout(scheduleGarbageSpawn, interval);
-    }
-
-    function updateFlyer(enemy) {
-      enemy.x -= enemy.speed;
-      enemy.poopTimer++;
-      if (enemy.poopTimer > 60) {
-        enemy.poopTimer = 0;
-        poops.push({
-          x: enemy.x + enemy.w / 2,
-          y: enemy.y + enemy.h,
-          w: 20,
-          h: 20,
-          vy: 5
-        });
-      }
-    }
-
-    function updatePoops() {
-      poops.forEach(p => p.y += p.vy);
-      poops = poops.filter(p => p.y < 640);
-    }
-
-    function updateEnemies() {
-      enemies.forEach(e => {
-        if (e.type === "jumper") {
-          if (Math.random() < 0.02) e.vy = e.jumpPower;
-          e.vy += gravity;
-          e.y += e.vy;
-
-          if (e.y > GROUND_BOTTOM - e.h) {
-            e.y = GROUND_BOTTOM - e.h;
-            e.vy = 0;
-          }
-
-        } else if (e.type === "flyer") {
-          updateFlyer(e);
-
-        } else {
-          e.x -= e.speed;
-        }
-      });
-
-      enemies = enemies.filter(e => e.x > -100);
-    }
-
-    function isColliding(a, b) {
-      return (
-        a.x < b.x + b.w &&
-        a.x + a.w > b.x &&
-        a.y < b.y + b.h &&
-        a.y + a.h > b.y
-      );
-    }
-
-    function update() {
-      if (gameOver) return;
-
-      updateDifficulty();
-
-      if (keys["ArrowLeft"]) player.x -= 4;
-      if (keys["ArrowRight"]) player.x += 4;
-
-      player.vy += gravity;
-      player.y += player.vy;
-
-      if (player.y >= GROUND_BOTTOM - player.h) {
-        player.y = GROUND_BOTTOM - player.h;
-        player.vy = 0;
-        player.onGround = true;
-        player.jumpCount = 0;
-      }
-
-      garbage.forEach(g => g.x -= 4);
-      garbage = garbage.filter(g => g.x > -50);
-
-      updateEnemies();
-      updatePoops();
-
-      garbage.forEach((g, i) => {
-        if (isColliding(player, g)) {
-          score += g.score;
-          garbage.splice(i, 1);
-        }
-      });
-
-      enemies.forEach(e => {
-        if (isColliding(player, e)) endGame();
-      });
-
-      poops.forEach(p => {
-        if (isColliding(player, p)) endGame();
-      });
-
-      score += 0.1;
-
-      draw();
-      requestAnimationFrame(update);
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "blue";
-      ctx.fillRect(player.x, player.y, player.w, player.h);
-
-      garbage.forEach(g => {
-        ctx.fillStyle = g.color;
-        ctx.fillRect(g.x, g.y, g.w, g.h);
-      });
-
-      enemies.forEach(e => {
-        ctx.fillStyle = "red";
-        ctx.fillRect(e.x, e.y, e.w, e.h);
-      });
-
-      ctx.fillStyle = "brown";
-      poops.forEach(p => ctx.fillRect(p.x, p.y, p.w, p.h));
-
-      ctx.fillStyle = "black";
-      ctx.font = "20px Arial";
-      ctx.fillText("Score: " + Math.floor(score), 10, 30);
-      ctx.fillText("Lv: " + difficulty, 280, 30);
-
-      ctx.font = "14px Arial";
-      ctx.fillText("Trash Picker " + VERSION, 10, 60);
-    }
-
-    async function endGame() {
-      gameOver = true;
-
-      const finalScore = Math.floor(score);
-      const playerName = nameInput.value.trim() || "名無し";
-
-      await saveScoreToFirebase(finalScore, playerName);
-
-      /* ★ Firestore を常に10件に保つ */
-      await cleanupTop10();
-
-      window.parent.postMessage({ type: "GAME_OVER" }, "*");
-
-      replayButton.style.display = "flex";
-    }
-  </script>
+  <div id="loading">読み込み中…</div>
 
 </body>
 </html>
