@@ -12,6 +12,7 @@
       background: #f0f0f0;
       font-family: Arial, sans-serif;
     }
+
     #startScreen, #replayButton {
       width: 360px;
       height: 640px;
@@ -25,31 +26,35 @@
       flex-direction: column;
       gap: 20px;
     }
+
     #startScreen {
       background: #ffffff;
       position: relative;
       z-index: 10;
     }
+
+    /* ★★★ ここが v1.1.0 の最重要修正 ★★★ */
     #replayButton {
       background: rgba(0,0,0,0.6);
       color: #fff;
       position: absolute;
-      top: 0;
-      left: 0;
+      inset: 0;        /* ← これで確実に canvas の上に重なる */
       display: none;
-      z-index: 9999; /* ★ 常に最前面 */
+      z-index: 9999;
     }
+
     #nameInput {
       font-size: 20px;
       padding: 10px;
       width: 250px;
       text-align: center;
     }
+
     #gameCanvas {
       display: none;
       background: #ffffff;
       position: relative;
-      z-index: 1; /* ★ canvas は後ろ */
+      z-index: 1;
     }
   </style>
 
@@ -105,7 +110,7 @@
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
   <script>
-    const VERSION = "v1.0.9";
+    const VERSION = "v1.1.0";
     const GROUND_BOTTOM = 540;
 
     const canvas = document.getElementById("gameCanvas");
