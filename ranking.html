@@ -69,12 +69,11 @@
     }
   </style>
 
-  <!-- Firebase v8（Wix iframe で動く） -->
+  <!-- Firebase v8 -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
 
   <script>
-    // ★ 健の Firebase 設定
     var firebaseConfig = {
       apiKey: "AIzaSyDKUEGCdlnIIS_1nmMpEzqZ3bc9icLd2aE",
       authDomain: "wix-game-score.firebaseapp.com",
@@ -89,12 +88,10 @@
 
     let adminMode = false;
 
-    // ★ 管理者モード トグル
     function toggleAdminMode() {
       const keyInput = document.getElementById("adminKeyInput");
       const btn = document.getElementById("adminToggleBtn");
 
-      // OFF → ON
       if (!adminMode) {
         if (keyInput.value === "fujimino2025") {
           adminMode = true;
@@ -106,13 +103,11 @@
         return;
       }
 
-      // ON → OFF
       adminMode = false;
       btn.textContent = "管理者モード ON";
       loadRanking();
     }
 
-    // ★ ランキング表示（リアルタイム更新）
     function loadRanking() {
       const tableBody = document.getElementById("rankingBody");
       const loading = document.getElementById("loading");
@@ -121,30 +116,55 @@
 
       db.collection("scores")
         .orderBy("score", "desc")
-        .limit(100)
+        .limit(50)  // 一旦多めに取得
         .onSnapshot((snapshot) => {
           tableBody.innerHTML = "";
           loading.style.display = "none";
 
-          let rank = 1;
+          let items = [];
 
           snapshot.forEach(doc => {
             const data = doc.data();
-            const id = doc.id;
+            items.push({
+              id: doc.id,
+              name: data.name || "",
+              score: data.score,
+              date: data.date ? data.date.toDate() : null
+            });
+          });
 
-            const dateStr = data.date
-              ? data.date.toDate().toLocaleString("ja-JP")
+          /* ★ 健さん仕様の並び替えロジック */
+          items.sort((a, b) => {
+            // ① スコア降順
+            if (b.score !== a.score) return b.score - a.score;
+
+            // ② 空欄の名前は最後へ
+            if (a.name.trim() === "" && b.name.trim() !== "") return 1;
+            if (b.name.trim() === "" && a.name.trim() !== "") return -1;
+
+            // ③ 大文字小文字を無視して名前昇順
+            return a.name.toLowerCase().localeCompare(b.name.toLowerCase(), "ja");
+          });
+
+          // ★ トップ10だけに絞る
+          items = items.slice(0, 10);
+
+          // ★ 表示
+          let rank = 1;
+          items.forEach(item => {
+            const dateStr = item.date
+              ? item.date.toLocaleString("ja-JP")
               : "-";
 
             const row = document.createElement("tr");
 
             row.innerHTML = `
               <td>${rank}</td>
-              <td>${data.name}</td>
-              <td>${data.score}</td>
+              <td>${item.name}</td>
+              <td>${item.score}</td>
               <td>${dateStr}</td>
               <td>
-                ${adminMode ? `<button class="deleteBtn" onclick="deleteScore('${id}')">削除</button>` : ""}
+                ${adminMode ? `<button class="deleteBtn" onclick="deleteScore('${item.id}')">削除</button>` : ""}
               </td>
             `;
 
@@ -159,7 +179,6 @@
         });
     }
 
-    // ★ スコア削除（アラートなし）
     async function deleteScore(id) {
       await db.collection("scores").doc(id).delete();
     }
@@ -195,3 +214,4 @@
 
 </body>
 </html>
+
