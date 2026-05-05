@@ -101,7 +101,7 @@
   <canvas id="gameCanvas" width="360" height="640"></canvas>
 
   <script>
-    const VERSION = "v1.0.7";
+    const VERSION = "v1.0.8";
 
     const GROUND_BOTTOM = 540;  // ★ 地面の底辺を540pxに統一
 
@@ -326,6 +326,8 @@
         } else {
           e.x -= e.speed;
         }
+
+        e.y = Math.round(e.y);  // ★ 敵の高さを整数化してズレを防ぐ
       });
 
       enemies = enemies.filter(e => e.x > -100);
@@ -419,13 +421,16 @@
       const finalScore = Math.floor(score);
       const playerName = nameInput.value.trim() || "名無し";
 
-      await saveScoreToFirebase(finalScore, playerName);
-
-      /* ★ Firestore を常に10件に保つ */
-      await cleanupTop10();
-
+      /* ★ Wix に最優先で通知（重要） */
       window.parent.postMessage({ type: "GAME_OVER" }, "*");
 
+      /* スコア保存 */
+      await saveScoreToFirebase(finalScore, playerName);
+
+      /* トップ10維持 */
+      await cleanupTop10();
+
+      /* ★ ゲームオーバー画面を表示 */
       replayButton.style.display = "flex";
     }
   </script>
