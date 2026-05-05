@@ -438,13 +438,13 @@
     async function endGame() {
       gameOver = true;
 
-      const finalScore = Math.floor(score);
-      const playerName = nameInput.value.trim() || "名無し";
+      //const finalScore = Math.floor(score);
+      //const playerName = nameInput.value.trim() || "名無し";
 
-      window.parent.postMessage({ type: "GAME_OVER" }, "*");
+      //window.parent.postMessage({ type: "GAME_OVER" }, "*");
 
-      await saveScoreToFirebase(finalScore, playerName);
-      await cleanupTop10();
+      //await saveScoreToFirebase(finalScore, playerName);
+      //await cleanupTop10();
 
       replayButton.style.display = "flex";
     }
