@@ -244,37 +244,40 @@
     });
   }
 
-  // ★ flyer 出現率 15% ベース
   function chooseEnemyType() {
     const r = Math.random();
-
-    // flyer は常に 15%
+  
+    // ★ Level1〜2 は flyer 出現率 0%
+    if (difficulty <= 2) {
+      // 地上敵のみ
+      if (difficulty == 1) return "normal";
+      return Math.random() < 0.7 ? "normal" : "tall";
+    }
+  
+    // ★ Level3 以降は flyer 出現率 15%
     if (r < 0.15) {
       return "flyer";
     }
-
-    // 残り 85% を地上敵で配分
+  
+    // ★ 残り 85% を地上敵で配分
     const gr = Math.random();
-
-    if (difficulty <= 1) {
-      return "normal";
-    }
-
-    if (difficulty <= 3) {
+  
+    if (difficulty == 3) {
       return gr < 0.7 ? "normal" : "tall";
     }
-
+  
     if (difficulty == 4) {
       if (gr < 0.6) return "normal";
       if (gr < 0.9) return "tall";
       return "jumper";
     }
-
+  
     // difficulty 5〜7
     if (gr < 0.5) return "normal";
     if (gr < 0.8) return "tall";
     return "jumper";
   }
+
 
   // ★ flyer は常に低速、地上敵のみ難易度で加速
   function getEnemySpeed(type, baseSpeed) {
@@ -336,9 +339,18 @@
 
   function updateFlyer(enemy) {
     enemy.x -= enemy.speed;
+  
+    // ★ ランダム間隔でウンチを落とす
+    if (!enemy.nextPoop) {
+      enemy.nextPoop = 40 + Math.floor(Math.random() * 50); 
+    }
+  
     enemy.poopTimer++;
-    if (enemy.poopTimer > 60) {
+  
+    if (enemy.poopTimer >= enemy.nextPoop) {
       enemy.poopTimer = 0;
+      enemy.nextPoop = 40 + Math.floor(Math.random() * 50); // ★ 次の間隔もランダム
+  
       poops.push({
         x: enemy.x + enemy.w / 2,
         y: enemy.y + enemy.h,
