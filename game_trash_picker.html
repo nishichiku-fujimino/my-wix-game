@@ -135,6 +135,8 @@
   const startScreen = document.getElementById("startScreen");
   const replayButton = document.getElementById("replayButton");
   const nameInput = document.getElementById("nameInput");
+  let enemySpawnTimerId = null;
+  let garbageSpawnTimerId = null;
 
   // ★ 名前入力欄をタップしたときはゲーム開始を阻止
   nameInput.addEventListener("click", (e) => {
@@ -193,9 +195,9 @@
 
   function startGame() {
     initGame();
+    scheduleEnemySpawn(true);
+    scheduleGarbageSpawn(true);
     update();
-    scheduleEnemySpawn();
-    scheduleGarbageSpawn();
   }
 
   document.addEventListener("keydown", (e) => {
@@ -395,18 +397,37 @@
     return Math.max(600, 2000 - (difficulty - 1) * 200);
   }
 
-  function scheduleEnemySpawn() {
+  function scheduleEnemySpawn(reset = false) {
+    if (reset && enemySpawnTimerId !== null) {
+      clearTimeout(enemySpawnTimerId);
+      enemySpawnTimerId = null;
+    }
+  
     if (gameOver) return;
+  
     spawnEnemy();
-    setTimeout(scheduleEnemySpawn, getEnemySpawnInterval());
+  
+    enemySpawnTimerId = setTimeout(() => {
+      scheduleEnemySpawn(false);
+    }, getEnemySpawnInterval());
   }
 
-  function scheduleGarbageSpawn() {
+  function scheduleGarbageSpawn(reset = false) {
+    if (reset && garbageSpawnTimerId !== null) {
+      clearTimeout(garbageSpawnTimerId);
+      garbageSpawnTimerId = null;
+    }
+  
     if (gameOver) return;
+  
     spawnGarbage();
+  
     const interval = Math.max(400, 1500 - (difficulty - 1) * 120);
-    setTimeout(scheduleGarbageSpawn, interval);
+    garbageSpawnTimerId = setTimeout(() => {
+      scheduleGarbageSpawn(false);
+    }, interval);
   }
+
 
   function updateFlyer(enemy) {
     enemy.x -= enemy.speed;
@@ -469,7 +490,7 @@
     }
   
     // ★ 上に飛びすぎて画面外に行かないように上限
-    const maxJumpHeight = GROUND_BOTTOM - enemy.h - 120; // Tall の2倍
+    const maxJumpHeight = GROUND_BOTTOM - enemy.h - 180; // Tall の3倍
     if (enemy.y < maxJumpHeight) {
       enemy.y = maxJumpHeight;
       enemy.vy = 0;
@@ -586,6 +607,15 @@
   async function endGame() {
     if (gameOver) return;
     gameOver = true;
+    // ★ タイマーを止める
+    if (enemySpawnTimerId !== null) {
+      clearTimeout(enemySpawnTimerId);
+      enemySpawnTimerId = null;
+    }
+    if (garbageSpawnTimerId !== null) {
+      clearTimeout(garbageSpawnTimerId);
+      garbageSpawnTimerId = null;
+    }
 
     const finalScore = Math.floor(score);
     const playerName = nameInput.value.trim() || "名無し";
