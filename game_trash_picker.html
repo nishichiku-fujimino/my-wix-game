@@ -13,17 +13,22 @@
       background: #f0f0f0;
       font-family: Arial, sans-serif;
     }
-
+  
+    /* ★ ゲーム全体をレスポンシブ化 */
     #gameContainer {
       position: relative;
-      width: 360px;
-      height: 640px;
+      width: 100vw;                 /* 画面幅に合わせる */
+      max-width: 360px;             /* 360px を上限にする */
+      height: calc(100vw * (640 / 360)); /* アスペクト比維持 */
+      max-height: 640px;
       margin: 0 auto;
+      overflow: hidden;
     }
-
+  
+    /* ★ スタート画面・リプレイ画面も親に合わせる */
     #startScreen, #replayButton {
-      width: 360px;
-      height: 640px;
+      width: 100%;
+      height: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -37,44 +42,53 @@
       top: 0;
       left: 0;
     }
-
+  
     #startScreen {
       background: #ffffff;
       z-index: 10;
     }
-
+  
     #replayButton {
       background: rgba(0,0,0,0.6);
       color: #fff;
       display: none;
       z-index: 9999;
     }
-
+  
     #nameInput {
       font-size: 20px;
       padding: 10px;
-      width: 250px;
+      width: 70%;       /* 画面幅に合わせて縮小 */
+      max-width: 250px;
       text-align: center;
     }
-
+  
+    /* ★ canvas を親に合わせて縮小 */
     #gameCanvas {
       background: #ffffff;
       position: absolute;
       top: 0;
       left: 0;
+      width: 100%;      /* 親に合わせる */
+      height: 100%;     /* 親に合わせる */
       z-index: 1;
     }
+  
+    /* ★ スマホ操作ボタンもゲーム幅に追従 */
     #touchControls {
       position: absolute;
       bottom: 20px;
       left: 0;
+      right: 0;
       width: 100%;
+      max-width: 360px;
+      margin: 0 auto;
       display: flex;
       justify-content: space-between;
       padding: 0 20px;
       z-index: 9999;
     }
-    
+  
     .touchBtn {
       width: 80px;
       height: 80px;
@@ -88,19 +102,17 @@
       user-select: none;
       touch-action: none;
       transition: 0.15s;
-      backdrop-filter: blur(2px);     /* ★ 背景を少しぼかして視認性UP */
+      backdrop-filter: blur(2px);
     }
-    
-    /* ★ 押したとき光るエフェクト */
+  
     .touchBtn:active {
       background: rgba(255,255,255,0.6);
       box-shadow: 0 0 20px white;
     }
-    
-    /* ★ ジャンプボタンは右側に寄せる */
+  
     .jumpBtn {
       margin-left: auto;
-      margin-right: 20px;   /* ★ 追加：右端から10px左へ */
+      margin-right: 20px;
     }
   </style>
 
