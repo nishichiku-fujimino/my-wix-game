@@ -127,7 +127,7 @@
   </div>
 
   <script>
-  const VERSION = "v1.2.1";
+  const VERSION = "v1.2.2";
   const GROUND_BOTTOM = 540;
 
   const canvas = document.getElementById("gameCanvas");
@@ -323,38 +323,70 @@
     return baseSpeed + difficulty * 0.5;
   }
 
-  // 地上敵1体 + 空中敵1体 同時出現可能
+  // 地上敵2体 + 空中敵1体 同時出現可能
   function spawnEnemy() {
     if (gameOver) return;
-
+  
+    // 現在の敵数を確認
     const groundEnemies = enemies.filter(e => e.type !== "flyer").length;
     const flyerEnemies  = enemies.filter(e => e.type === "flyer").length;
-
+  
+    // 敵タイプを決定
     const type = chooseEnemyType();
     const e = enemyTypes[type];
-
-    if (type !== "flyer" && groundEnemies >= 1) return;
+  
+    // ★ 地上敵は2体まで許可（緩和済み）
+    if (type !== "flyer" && groundEnemies >= 2) return;
+  
+    // ★ flyer は1体まで
     if (type === "flyer" && flyerEnemies >= 1) return;
-
+  
+    // 基本の Y 座標
+    let enemyY = (type === "flyer")
+      ? e.flyHeight
+      : GROUND_BOTTOM - e.h;
+  
+    // ★ Jumper の出現位置をランダムにオフセット（-40〜+40px）
+    if (type === "jumper") {
+      const offset = (Math.random() * 80) - 40; // -40〜+40
+      enemyY = GROUND_BOTTOM - e.h + offset;
+  
+      // 地面より下に行かないよう補正
+      if (enemyY > GROUND_BOTTOM - e.h) {
+        enemyY = GROUND_BOTTOM - e.h;
+      }
+  
+      // 高すぎると tall より上に行きすぎるので上限を設定（40px 上まで）
+      const maxJumpStart = GROUND_BOTTOM - e.h - 40;
+      if (enemyY < maxJumpStart) {
+        enemyY = maxJumpStart;
+      }
+    }
+  
+    // ★ ゴミとの重なり防止（地上敵のみ）
     const lastGarbage = garbage[garbage.length - 1];
     if (type !== "flyer") {
       if (lastGarbage && lastGarbage.x > 360 - e.w) {
         return;
       }
     }
-
+  
+    // 敵を追加
     enemies.push({
       type,
-      x: 360,   // 画面右端
-      y: type === "flyer" ? e.flyHeight : GROUND_BOTTOM - e.h,
+      x: 360,
+      y: enemyY,
       w: e.w,
       h: e.h,
       speed: getEnemySpeed(type, e.speed),
       vy: 0,
       jumpPower: e.jumpPower || 0,
-      poopTimer: 0
+      poopTimer: 0,
+      jumpTimer: 0
     });
   }
+
+
 
   function getEnemySpawnInterval() {
     return Math.max(600, 2000 - (difficulty - 1) * 200);
@@ -401,36 +433,54 @@
     poops.forEach(p => p.y += p.vy);
     poops = poops.filter(p => p.y < 640);
   }
+    
+  function updateJumper(enemy) {
+    // 横移動
+    enemy.x -= enemy.speed;
+  
+    // ジャンプ周期（60フレームごとにジャンプ）
+    enemy.jumpTimer = (enemy.jumpTimer || 0) + 1;
+  
+    if (enemy.jumpTimer >= 60) {
+      enemy.jumpTimer = 0;
+      enemy.vy = -12;  // ★ tall の高さまで届くジャンプ力
+    }
+  
+    // 重力
+    enemy.vy += gravity;
+    enemy.y += enemy.vy;
+  
+    // 地面に着地
+    if (enemy.y > GROUND_BOTTOM - enemy.h) {
+      enemy.y = GROUND_BOTTOM - enemy.h;
+      enemy.vy = 0;
+    }
+  }
 
   function updateEnemies() {
     enemies.forEach(e => {
+  
       if (e.type === "jumper") {
-        if (Math.random() < 0.02) e.vy = e.jumpPower;
-        e.vy += gravity;
-        e.y += e.vy;
-
-        if (e.y > GROUND_BOTTOM - e.h) {
-          e.y = GROUND_BOTTOM - e.h;
-          e.vy = 0;
-        }
-
-      } else if (e.type === "flyer") {
-        updateFlyer(e);
-
-      } else {
-        e.x -= e.speed;
+        updateJumper(e);
+        return;
       }
-
-      e.y = Math.round(e.y);
+  
+      if (e.type === "flyer") {
+        updateFlyer(e);
+        return;
+      }
+  
+      // normal / tall
+      e.x -= e.speed;
     });
-
-    // 画面外に出た敵を確実に削除（x と y 両方を見る）
+  
     enemies = enemies.filter(e =>
-      e.x + e.w > 0 &&   // 左に消えていない
-      e.y + e.h > 0 &&   // 上に消えていない
-      e.y < 640          // 下に消えていない
+      e.x + e.w > 0 &&
+      e.y + e.h > 0 &&
+      e.y < 640
     );
   }
+
 
   function isColliding(a, b) {
     return (
