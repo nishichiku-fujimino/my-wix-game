@@ -127,7 +127,7 @@
   </div>
 
   <script>
-  const VERSION = "v1.2.5";
+  const VERSION = "v1.2.6";
   const GROUND_BOTTOM = 540;
 
   const canvas = document.getElementById("gameCanvas");
@@ -169,10 +169,10 @@
   ];
 
   const enemyTypes = {
-    normal: { w: 40, h: 40, speed: 6 },
+    normal: { w: 40, h: 40, speed: 5 },
     tall:   { w: 40, h: 60, speed: 4 },
-    jumper: { w: 40, h: 40, speed: 1.5, jumpPower: -8 },
-    flyer:  { w: 40, h: 40, speed: 4, flyHeight: 150 }
+    jumper: { w: 40, h: 40, speed: 2, jumpPower: -8 },
+    flyer:  { w: 40, h: 40, speed: 3, flyHeight: 150 }
   };
 
   function initGame() {
@@ -368,14 +368,6 @@
       }
     }
   
-    // ★ ゴミとの重なり防止（地上敵のみ）
-    const lastGarbage = garbage[garbage.length - 1];
-    if (type !== "flyer") {
-      if (lastGarbage && lastGarbage.x > 360 - e.w) {
-        return;
-      }
-    }
-  
     // 敵を追加
     enemies.push({
       type,
@@ -538,7 +530,10 @@
 
     if (keys["ArrowLeft"]) player.x -= 4;
     if (keys["ArrowRight"]) player.x += 4;
-
+    // ★ 自機の画面外移動を禁止
+    if (player.x < 0) player.x = 0;
+    if (player.x + player.w > 360) player.x = 360 - player.w;
+    
     player.vy += gravity;
     player.y += player.vy;
 
