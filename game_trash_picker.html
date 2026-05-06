@@ -127,7 +127,7 @@
   </div>
 
   <script>
-  const VERSION = "v1.2.3";
+  const VERSION = "v1.2.4";
   const GROUND_BOTTOM = 540;
 
   const canvas = document.getElementById("gameCanvas");
@@ -377,7 +377,7 @@
     // 敵を追加
     enemies.push({
       type,
-      x: 360,
+      x: 360 + (type === "jumper" ? 10 : 0),  // ★ Jumper は安全マージンで右にずらす
       y: enemyY,
       w: e.w,
       h: e.h,
@@ -385,7 +385,7 @@
       vy: 0,
       jumpPower: e.jumpPower || 0,
       poopTimer: 0,
-      jumpTimer: 0
+      jumpDistance: 0  // ★ 着地後の距離カウント用
     });
   }
 
@@ -438,18 +438,23 @@
   }
     
   function updateJumper(enemy) {
-    // ★ 横移動（Jumper は最も遅い）
+    // 横移動
     enemy.x -= enemy.speed;
   
-    // ★ 移動距離でジャンプを管理（20px 進んだら再ジャンプ）
-    enemy.jumpDistance = (enemy.jumpDistance || 0) + enemy.speed;
+    // ★ 着地している時だけ距離カウント
+    const onGround = (enemy.y >= GROUND_BOTTOM - enemy.h - 0.1);
   
-    if (enemy.jumpDistance >= 20) {
-      enemy.jumpDistance = 0;
-      enemy.vy = -16;  // ★ Tall の 2倍の高さ（120px）に届くジャンプ力
+    if (onGround) {
+      enemy.jumpDistance = (enemy.jumpDistance || 0) + enemy.speed;
+  
+      // ★ 着地後20px進んだらジャンプ
+      if (enemy.jumpDistance >= 20) {
+        enemy.jumpDistance = 0;
+        enemy.vy = -16;  // Tall の2倍の高さ（120px）に届くジャンプ力
+      }
     }
   
-    // ★ 重力
+    // 重力
     enemy.vy += gravity;
     enemy.y += enemy.vy;
   
@@ -458,7 +463,15 @@
       enemy.y = GROUND_BOTTOM - enemy.h;
       enemy.vy = 0;
     }
+  
+    // ★ 上に飛びすぎて画面外に行かないように上限
+    const maxJumpHeight = GROUND_BOTTOM - enemy.h - 120; // Tall の2倍
+    if (enemy.y < maxJumpHeight) {
+      enemy.y = maxJumpHeight;
+      enemy.vy = 0;
+    }
   }
+
 
   function updateEnemies() {
     enemies.forEach(e => {
