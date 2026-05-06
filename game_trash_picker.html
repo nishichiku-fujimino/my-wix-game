@@ -98,6 +98,7 @@
     /* ★ ジャンプボタンは右側に寄せる */
     .jumpBtn {
       margin-left: auto;
+      margin-right: 10px;   /* ★ 追加：右端から10px左へ */
     }
   </style>
 
@@ -167,7 +168,7 @@
   </div>
 
   <script>
-  const VERSION = "v1.3.1";
+  const VERSION = "v1.3.2";
   const GROUND_BOTTOM = 540;
 
   const canvas = document.getElementById("gameCanvas");
@@ -182,6 +183,8 @@
   let garbageSpawnTimerId = null;
   let moveLeft = false;
   let moveRight = false;
+  const jumpSound = new Audio("Jump.mp3");  // ★ ポンッ音
+  jumpSound.volume = 0.8;                  // 音量調整（お好みで）
 
   // ★ 名前入力欄をタップしたときはゲーム開始を阻止
   nameInput.addEventListener("click", (e) => {
@@ -282,8 +285,13 @@
     keys[e.key] = false;
   });
   
-  function doJump() {
+   function doJump() {
     if (player.jumpCount < 2) {
+  
+      // ★ ジャンプ音を鳴らす
+      jumpSound.currentTime = 0;
+      jumpSound.play();
+  
       player.vy = player.jumpCount === 0 ? -12 : -10;
       player.onGround = false;
       player.jumpCount++;
