@@ -127,7 +127,7 @@
   </div>
 
   <script>
-  const VERSION = "v1.1.9";
+  const VERSION = "v1.2.0";
   const GROUND_BOTTOM = 540;
 
   const canvas = document.getElementById("gameCanvas");
@@ -259,36 +259,58 @@
   function chooseEnemyType() {
     const r = Math.random();
   
-    // ★ Level1〜2 は flyer 出現率 0%
+    // ★ Level1〜2：flyer 0%、jumper 0%
     if (difficulty <= 2) {
-      // 地上敵のみ
-      if (difficulty == 1) return "normal";
       return Math.random() < 0.7 ? "normal" : "tall";
     }
   
-    // ★ Level3 以降は flyer 出現率 15%
-    if (r < 0.15) {
-      return "flyer";
+    // ★ Level3：flyer 15%、jumper 0%
+    if (difficulty === 3) {
+      if (r < 0.15) return "flyer";
+      return Math.random() < 0.7 ? "normal" : "tall";
     }
   
-    // ★ 残り 85% を地上敵で配分
-    const gr = Math.random();
+    // ★ Level4：flyer 15%、jumper 少し
+    if (difficulty === 4) {
+      if (r < 0.15) return "flyer";
   
-    if (difficulty == 3) {
-      return gr < 0.7 ? "normal" : "tall";
-    }
-  
-    if (difficulty == 4) {
+      const gr = Math.random();
       if (gr < 0.6) return "normal";
       if (gr < 0.9) return "tall";
+      return "jumper"; // 10%
+    }
+  
+    // ★ Level5：normal 50% / tall 30% / jumper 20%
+    if (difficulty === 5) {
+      if (r < 0.15) return "flyer";
+  
+      const gr = Math.random();
+      if (gr < 0.50) return "normal";
+      if (gr < 0.80) return "tall";
       return "jumper";
     }
   
-    // difficulty 5〜7
-    if (gr < 0.5) return "normal";
-    if (gr < 0.8) return "tall";
-    return "jumper";
+    // ★ Level6：normal 40% / tall 30% / jumper 30%
+    if (difficulty === 6) {
+      if (r < 0.15) return "flyer";
+  
+      const gr = Math.random();
+      if (gr < 0.40) return "normal";
+      if (gr < 0.70) return "tall";
+      return "jumper";
+    }
+  
+    // ★ Level7：normal = tall = jumper = 均等
+    if (difficulty >= 7) {
+      if (r < 0.15) return "flyer";
+  
+      const gr = Math.random();
+      if (gr < 1/3) return "normal";
+      if (gr < 2/3) return "tall";
+      return "jumper";
+    }
   }
+
 
 
   // ★ flyer は常に低速、地上敵のみ難易度で加速
