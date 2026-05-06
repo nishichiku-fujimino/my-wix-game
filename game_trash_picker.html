@@ -93,12 +93,19 @@
     async function cleanupTop10() {
       const snapshot = await db.collection("scores")
         .orderBy("score", "desc")
-        .orderBy("name", "asc")
         .get();
-
+    
       const docs = snapshot.docs;
+    
       for (let i = 10; i < docs.length; i++) {
-        await db.collection("scores").doc(docs[i].id).delete();
+        const id = docs[i].id;
+    
+        try {
+          await db.collection("scores").doc(id).delete();
+          console.log("Deleted:", id);
+        } catch (e) {
+          console.error("Delete failed:", id, e);
+        }
       }
     }
   </script>
@@ -163,7 +170,7 @@
     normal: { w: 40, h: 40, speed: 6 },
     tall:   { w: 40, h: 60, speed: 4 },
     jumper: { w: 40, h: 40, speed: 6, jumpPower: -10 },
-    flyer:  { w: 40, h: 40, speed: 4, flyHeight: 350 }
+    flyer:  { w: 40, h: 40, speed: 4, flyHeight: 150 }
   };
 
   function initGame() {
