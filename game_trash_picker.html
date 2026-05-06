@@ -63,6 +63,42 @@
       left: 0;
       z-index: 1;
     }
+    #touchControls {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 9999;
+    }
+    
+    .touchBtn {
+      width: 80px;
+      height: 80px;
+      background: rgba(0,0,0,0.3);
+      color: white;
+      font-size: 40px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+      touch-action: none;
+      transition: 0.1s;
+    }
+    
+    /* ★ 押したとき光るエフェクト */
+    .touchBtn:active {
+      background: rgba(255,255,255,0.6);
+      box-shadow: 0 0 20px white;
+    }
+    
+    /* ★ ジャンプボタンは右側に寄せる */
+    .jumpBtn {
+      margin-left: auto;
+    }
   </style>
 
   <!-- Firebase v8 -->
@@ -123,7 +159,11 @@
     <canvas id="gameCanvas" width="360" height="640"></canvas>
 
     <div id="replayButton">↻ REPLAY</div>
-
+    <div id="touchControls">
+      <div id="btnLeft" class="touchBtn">◀</div>
+      <div id="btnRight" class="touchBtn">▶</div>
+      <div id="btnJump" class="touchBtn jumpBtn">⤒</div>
+    </div>
   </div>
 
   <script>
@@ -135,8 +175,13 @@
   const startScreen = document.getElementById("startScreen");
   const replayButton = document.getElementById("replayButton");
   const nameInput = document.getElementById("nameInput");
+  const btnJump = document.getElementById("btnJump");
+  const btnLeft = document.getElementById("btnLeft");
+  const btnRight = document.getElementById("btnRight");
   let enemySpawnTimerId = null;
   let garbageSpawnTimerId = null;
+  let moveLeft = false;
+  let moveRight = false;
 
   // ★ 名前入力欄をタップしたときはゲーム開始を阻止
   nameInput.addEventListener("click", (e) => {
@@ -151,6 +196,26 @@
   replayButton.addEventListener("click", () => {
     replayButton.style.display = "none";
     startGame();
+  });
+ 
+  // ★ 左ボタン
+  btnLeft.addEventListener("touchstart", () => moveLeft = true);
+  btnLeft.addEventListener("touchend", () => moveLeft = false);
+  btnLeft.addEventListener("mousedown", () => moveLeft = true);
+  btnLeft.addEventListener("mouseup", () => moveLeft = false);
+  
+  // ★ 右ボタン
+  btnRight.addEventListener("touchstart", () => moveRight = true);
+  btnRight.addEventListener("touchend", () => moveRight = false);
+  btnRight.addEventListener("mousedown", () => moveRight = true);
+  btnRight.addEventListener("mouseup", () => moveRight = false);
+
+  btnJump.addEventListener("touchstart", () => {
+    doJump();
+  });
+  
+  btnJump.addEventListener("mousedown", () => {
+    doJump();
   });
 
   let player, garbage, enemies, poops, score, gameOver, difficulty;
@@ -205,11 +270,7 @@
   document.addEventListener("keydown", (e) => {
     if (e.key === " ") {
       if (!jumpKeyPressed) {
-        if (player.jumpCount < 2) {
-          player.vy = player.jumpCount === 0 ? -12 : -10;
-          player.onGround = false;
-          player.jumpCount++;
-        }
+          doJump();
       }
       jumpKeyPressed = true;
     }
@@ -220,6 +281,14 @@
     if (e.key === " ") jumpKeyPressed = false;
     keys[e.key] = false;
   });
+  
+  function doJump() {
+    if (player.jumpCount < 2) {
+      player.vy = player.jumpCount === 0 ? -12 : -10;
+      player.onGround = false;
+      player.jumpCount++;
+    }
+  }
 
   function updateDifficulty() {
     if (score > 6000) difficulty = 7;
@@ -540,8 +609,10 @@
 
     updateDifficulty();
 
-    if (keys["ArrowLeft"]) player.x -= 4;
-    if (keys["ArrowRight"]) player.x += 4;
+    // ★ 自機移動（スマホ＋PC両対応）
+    if (keys["ArrowLeft"] || moveLeft)  player.x -= 4;
+    if (keys["ArrowRight"] || moveRight) player.x += 4;
+    
     // ★ 自機の画面外移動を禁止
     if (player.x < 0) player.x = 0;
     if (player.x + player.w > 360) player.x = 360 - player.w;
