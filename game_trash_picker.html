@@ -127,7 +127,7 @@
   </div>
 
   <script>
-  const VERSION = "v1.2.0";
+  const VERSION = "v1.2.1";
   const GROUND_BOTTOM = 540;
 
   const canvas = document.getElementById("gameCanvas");
@@ -259,28 +259,30 @@
   function chooseEnemyType() {
     const r = Math.random();
   
-    // ★ Level1〜2：flyer 0%、jumper 0%
+    // ★ Level1〜2：地上敵のみ（jumper も flyer も出ない）
     if (difficulty <= 2) {
       return Math.random() < 0.7 ? "normal" : "tall";
     }
   
-    // ★ Level3：flyer 15%、jumper 0%
+    // ★ Level3：jumper 解禁、flyer はまだ出ない
     if (difficulty === 3) {
-      if (r < 0.15) return "flyer";
-      return Math.random() < 0.7 ? "normal" : "tall";
+      const gr = Math.random();
+      if (gr < 0.7) return "normal";
+      if (gr < 0.9) return "tall";
+      return "jumper";  // ★ Level3 から出現
     }
   
-    // ★ Level4：flyer 15%、jumper 少し
+    // ★ Level4：flyer 解禁（15%）
     if (difficulty === 4) {
-      if (r < 0.15) return "flyer";
+      if (r < 0.15) return "flyer";  // ★ Level4 から出現
   
       const gr = Math.random();
       if (gr < 0.6) return "normal";
-      if (gr < 0.9) return "tall";
-      return "jumper"; // 10%
+      if (gr < 0.85) return "tall";
+      return "jumper";
     }
   
-    // ★ Level5：normal 50% / tall 30% / jumper 20%
+    // ★ Level5：normal 50 / tall 30 / jumper 20（flyer 15%）
     if (difficulty === 5) {
       if (r < 0.15) return "flyer";
   
@@ -290,7 +292,7 @@
       return "jumper";
     }
   
-    // ★ Level6：normal 40% / tall 30% / jumper 30%
+    // ★ Level6：normal 40 / tall 30 / jumper 30（flyer 15%）
     if (difficulty === 6) {
       if (r < 0.15) return "flyer";
   
@@ -300,7 +302,7 @@
       return "jumper";
     }
   
-    // ★ Level7：normal = tall = jumper = 均等
+    // ★ Level7：normal = tall = jumper = 均等（flyer 15%）
     if (difficulty >= 7) {
       if (r < 0.15) return "flyer";
   
@@ -316,9 +318,9 @@
   // ★ flyer は常に低速、地上敵のみ難易度で加速
   function getEnemySpeed(type, baseSpeed) {
     if (type === "flyer") {
-      return 2.5;
+      return 2.0;
     }
-    return baseSpeed + difficulty * 0.8;
+    return baseSpeed + difficulty * 0.5;
   }
 
   // 地上敵1体 + 空中敵1体 同時出現可能
