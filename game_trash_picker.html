@@ -127,7 +127,7 @@
   </div>
 
   <script>
-  const VERSION = "v1.3.0";
+  const VERSION = "v1.3.1";
   const GROUND_BOTTOM = 540;
 
   const canvas = document.getElementById("gameCanvas");
@@ -171,7 +171,7 @@
   const enemyTypes = {
     normal:  { w: 40, h: 40, speed: 5 },
     tall:    { w: 40, h: 60, speed: 4 },
-    hitall:  { w: 40, h: 90, speed: 3 },   // ★ 新規追加
+    hitall:  { w: 40, h: 120, speed: 3 },   // ★ 新規追加
     jumper:  { w: 40, h: 40, speed: 1.5, jumpPower: -8 },
     flyer:   { w: 40, h: 40, speed: 2, flyHeight: 150 }
   };
@@ -390,8 +390,16 @@
 
 
   function getEnemySpawnInterval() {
-    return Math.max(600, 2000 - (difficulty - 1) * 200);
+    // ★ 基本間隔（難易度で短くなる）
+    const base = Math.max(600, 2000 - (difficulty - 1) * 200);
+  
+    // ★ ランダム幅（±30%）
+    const min = base * 0.7;
+    const max = base * 1.3;
+  
+    return Math.floor(Math.random() * (max - min) + min);
   }
+
 
   function scheduleEnemySpawn(reset = false) {
     if (reset && enemySpawnTimerId !== null) {
