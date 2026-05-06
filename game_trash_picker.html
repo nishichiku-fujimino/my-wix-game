@@ -120,7 +120,7 @@
   </div>
 
   <script>
-  const VERSION = "v1.1.81";
+  const VERSION = "v1.1.9";
   const GROUND_BOTTOM = 540;
 
   const canvas = document.getElementById("gameCanvas");
@@ -129,6 +129,11 @@
   const replayButton = document.getElementById("replayButton");
   const nameInput = document.getElementById("nameInput");
 
+  // ★ 名前入力欄をタップしたときはゲーム開始を阻止
+  nameInput.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+  
   startScreen.addEventListener("click", () => {
     startScreen.style.display = "none";
     startGame();
@@ -158,7 +163,7 @@
     normal: { w: 40, h: 40, speed: 6 },
     tall:   { w: 40, h: 60, speed: 4 },
     jumper: { w: 40, h: 40, speed: 6, jumpPower: -10 },
-    flyer:  { w: 40, h: 40, speed: 4, flyHeight: 250 }
+    flyer:  { w: 40, h: 40, speed: 4, flyHeight: 350 }
   };
 
   function initGame() {
