@@ -127,7 +127,7 @@
   </div>
 
   <script>
-  const VERSION = "v1.2.2";
+  const VERSION = "v1.2.3";
   const GROUND_BOTTOM = 540;
 
   const canvas = document.getElementById("gameCanvas");
@@ -169,7 +169,7 @@
   const enemyTypes = {
     normal: { w: 40, h: 40, speed: 6 },
     tall:   { w: 40, h: 60, speed: 4 },
-    jumper: { w: 40, h: 40, speed: 6, jumpPower: -10 },
+    jumper: { w: 40, h: 40, speed: 1.5, jumpPower: -16 },
     flyer:  { w: 40, h: 40, speed: 4, flyHeight: 150 }
   };
 
@@ -318,9 +318,12 @@
   // ★ flyer は常に低速、地上敵のみ難易度で加速
   function getEnemySpeed(type, baseSpeed) {
     if (type === "flyer") {
-      return 2.0;
+      return 2.0;  // Flyer は固定で遅め
     }
-    return baseSpeed + difficulty * 0.5;
+    if (type === "jumper") {
+      return baseSpeed + difficulty * 0.25;  // ★ 他の地上敵の半分
+    }
+    return baseSpeed + difficulty * 0.5;  // normal / tall
   }
 
   // 地上敵2体 + 空中敵1体 同時出現可能
@@ -435,22 +438,22 @@
   }
     
   function updateJumper(enemy) {
-    // 横移動
+    // ★ 横移動（Jumper は最も遅い）
     enemy.x -= enemy.speed;
   
-    // ジャンプ周期（60フレームごとにジャンプ）
-    enemy.jumpTimer = (enemy.jumpTimer || 0) + 1;
+    // ★ 移動距離でジャンプを管理（20px 進んだら再ジャンプ）
+    enemy.jumpDistance = (enemy.jumpDistance || 0) + enemy.speed;
   
-    if (enemy.jumpTimer >= 60) {
-      enemy.jumpTimer = 0;
-      enemy.vy = -12;  // ★ tall の高さまで届くジャンプ力
+    if (enemy.jumpDistance >= 20) {
+      enemy.jumpDistance = 0;
+      enemy.vy = -16;  // ★ Tall の 2倍の高さ（120px）に届くジャンプ力
     }
   
-    // 重力
+    // ★ 重力
     enemy.vy += gravity;
     enemy.y += enemy.vy;
   
-    // 地面に着地
+    // ★ 地面に着地
     if (enemy.y > GROUND_BOTTOM - enemy.h) {
       enemy.y = GROUND_BOTTOM - enemy.h;
       enemy.vy = 0;
