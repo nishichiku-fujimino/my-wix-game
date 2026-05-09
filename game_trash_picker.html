@@ -230,6 +230,7 @@
   });
   
   btnJump.addEventListener("mousedown", () => {
+    if (isMobile()) return;  // スマホなら無視
     doJump();
   });
 
@@ -297,20 +298,28 @@
     keys[e.key] = false;
   });
   
-   function doJump() {
+  function isMobile() {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  }
+
+  function doJump() {
+    if (jumpButtonLocked) return;   // ★ 連続発火防止
+    jumpButtonLocked = true;
+    setTimeout(() => jumpButtonLocked = false, 120); // ★ 0.12秒だけロック
+  
     if (player.jumpCount < 2) {
-      const jumpSound = new Audio("Jump.mp3");
+  
+      // ジャンプ音
+      const jumpSound = new Audio("pon.mp3");
       jumpSound.volume = 0.8;
       jumpSound.play().catch(e => {});
-      // ★ ジャンプ音を鳴らす
-      jumpSound.currentTime = 0;
-      jumpSound.play();
   
       player.vy = player.jumpCount === 0 ? -12 : -10;
       player.onGround = false;
       player.jumpCount++;
     }
   }
+
 
   function updateDifficulty() {
     if (score > 6000) difficulty = 7;
