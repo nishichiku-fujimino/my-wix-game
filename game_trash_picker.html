@@ -90,11 +90,11 @@
     }
   
     .touchBtn {
-      width: 80px;
-      height: 80px;
+      width: 60px;
+      height: 60px;
       background: rgba(0,0,0,0.25);
       color: white;
-      font-size: 40px;
+      font-size: 30px;
       border-radius: 50%;
       display: flex;
       justify-content: center;
@@ -212,18 +212,32 @@
     replayButton.style.display = "none";
     startGame();
   });
- 
+
   // ★ 左ボタン
-  btnLeft.addEventListener("touchstart", () => moveLeft = true);
-  btnLeft.addEventListener("touchend", () => moveLeft = false);
-  btnLeft.addEventListener("mousedown", () => moveLeft = true);
-  btnLeft.addEventListener("mouseup", () => moveLeft = false);
+  btnLeft.addEventListener("touchstart", () => { moveLeft = true; });
+  btnLeft.addEventListener("touchend", () => { moveLeft = false; });
+  
+  btnLeft.addEventListener("mousedown", (e) => {
+    if (isMobile()) return;  // スマホなら無視
+    moveLeft = true;
+  });
+  btnLeft.addEventListener("mouseup", (e) => {
+    if (isMobile()) return;
+    moveLeft = false;
+  });
   
   // ★ 右ボタン
-  btnRight.addEventListener("touchstart", () => moveRight = true);
-  btnRight.addEventListener("touchend", () => moveRight = false);
-  btnRight.addEventListener("mousedown", () => moveRight = true);
-  btnRight.addEventListener("mouseup", () => moveRight = false);
+  btnRight.addEventListener("touchstart", () => { moveRight = true; });
+  btnRight.addEventListener("touchend", () => { moveRight = false; });
+  
+  btnRight.addEventListener("mousedown", (e) => {
+    if (isMobile()) return;
+    moveRight = true;
+  });
+  btnRight.addEventListener("mouseup", (e) => {
+    if (isMobile()) return;
+    moveRight = false;
+  });
 
   btnJump.addEventListener("touchstart", () => {
     doJump();
