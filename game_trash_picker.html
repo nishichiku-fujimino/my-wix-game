@@ -182,7 +182,7 @@
   </div>
 
   <script>
-  const VERSION = "v1.3.61";
+  const VERSION = "v1.3.7";
   const GROUND_BOTTOM = 540;
 
   const canvas = document.getElementById("gameCanvas");
@@ -238,14 +238,23 @@
     if (isMobile()) return;
     moveRight = false;
   });
-
+  let jumpLock = false;
+  
+  // ★ スマホ用（touchstart のみ）
   btnJump.addEventListener("touchstart", () => {
+    if (jumpLock) return;
+    jumpLock = true;
     doJump();
+    setTimeout(() => jumpLock = false, 120);  // ロックは短く
   });
   
-  btnJump.addEventListener("mousedown", () => {
+  // ★ PC 用（mousedown のみ）
+  btnJump.addEventListener("mousedown", (e) => {
     if (isMobile()) return;  // スマホなら無視
+    if (jumpLock) return;
+    jumpLock = true;
     doJump();
+    setTimeout(() => jumpLock = false, 120);
   });
 
   let player, garbage, enemies, poops, score, gameOver, difficulty;
@@ -317,10 +326,6 @@
   }
 
   function doJump() {
-    if (jumpButtonLocked) return;   // ★ 連続発火防止
-    jumpButtonLocked = true;
-    setTimeout(() => jumpButtonLocked = false, 120); // ★ 0.12秒だけロック
-  
     if (player.jumpCount < 2) {
   
       // ジャンプ音
